@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+.agents/
+reports/
+
+# Local input videos can be private and large; keep them out of Git by default.
+source_videos/
