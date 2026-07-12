@@ -19,6 +19,7 @@ from report_writer import (
     write_raw_ffprobe,
     write_reports,
 )
+from temporal.analyzer import analyze_temporal
 from video_selector import choose_video, find_video_files
 
 
@@ -115,6 +116,32 @@ def main() -> int:
                 "comparisons": [],
             }
 
+        print("Running temporal analysis...")
+        try:
+            temporal_analysis, temporal_warnings = analyze_temporal(
+                video_path=selected_video,
+                analysis_dir=analysis_dir,
+                metadata=metadata,
+            )
+            warnings.extend(temporal_warnings)
+        except Exception as error:
+            warnings.append(f"Temporal analysis failed: {error}")
+            temporal_analysis = {
+                "status": "failed",
+                "reason": str(error),
+                "configuration": {},
+                "summary": {},
+                "scenes": [],
+                "scene_representative_frames": [],
+                "notable_intervals": [],
+                "notable_transitions": [],
+                "observations": [],
+                "limitations": [
+                    "Temporal analysis failed, but metadata and representative-frame analysis may still be available."
+                ],
+                "artifacts": {},
+            }
+
         temporal_evidence = build_temporal_evidence(
             frames=frame_analysis["frames"],
             comparisons=frame_analysis["comparisons"],
@@ -125,6 +152,9 @@ def main() -> int:
             "missing_metadata": metadata_observations["missing_metadata"],
             "temporal_heuristics": temporal_evidence,
         }
+        observations["temporal_heuristics"].extend(
+            temporal_analysis.get("observations", [])
+        )
 
         analysis_completed_at = datetime.now().astimezone()
         processing_duration = round(perf_counter() - started_perf, 3)
@@ -146,6 +176,7 @@ def main() -> int:
             metadata=metadata,
             sampling=sampling,
             frame_analysis=frame_analysis,
+            temporal_analysis=temporal_analysis,
             evidence=temporal_evidence,
             observations=observations,
             warnings=warnings,

@@ -150,8 +150,8 @@ class ReliabilityTests(unittest.TestCase):
                 "status": "completed",
             },
             analysis_environment={
-                "application_version": "0.3.0",
-                "report_schema_version": "0.3",
+                "application_version": "0.4.1",
+                "report_schema_version": "0.4",
             },
             source={
                 "filename": "sample.mp4",
@@ -174,6 +174,7 @@ class ReliabilityTests(unittest.TestCase):
                 "repeated_decoded_timestamps_seconds": [],
             },
             frame_analysis=frame_analysis,
+            temporal_analysis=_minimal_temporal_analysis(),
             evidence=[],
             observations={"metadata_facts": [], "missing_metadata": [], "temporal_heuristics": []},
             warnings=[],
@@ -196,6 +197,36 @@ def _minimal_metadata() -> dict[str, object]:
         "duration_comparison": {"container_duration_seconds": None, "video_start_time_seconds": None, "video_duration_seconds": None, "video_end_time_seconds": None, "audio_start_time_seconds": None, "audio_duration_seconds": None, "audio_end_time_seconds": None, "duration_only_difference_seconds": None, "start_time_difference_seconds": None, "end_time_difference_seconds": None},
         "encoding": {"container_encoder": None, "video_stream_encoder": None, "audio_stream_encoder": None, "video_handler_name": None, "audio_handler_name": None, "container_vendor_id": None, "video_vendor_id": None, "audio_vendor_id": None},
         "display": {"orientation": None, "width": None, "height": None, "rotation": None, "sample_aspect_ratio": None, "display_aspect_ratio": None},
+    }
+
+
+def _minimal_temporal_analysis() -> dict[str, object]:
+    return {
+        "status": "skipped",
+        "reason": "test",
+        "configuration": {
+            "requested_analysis_fps": 5.0,
+            "effective_analysis_fps": 5.0,
+            "maximum_analyzed_frames": 1500,
+            "resize_max_width": 320,
+        },
+        "summary": {
+            "temporal_frames_analyzed": 0,
+            "transitions_analyzed": 0,
+            "scene_count": 0,
+            "scene_boundary_candidate_count": 0,
+            "sustained_near_static_interval_count": 0,
+            "motion_summary_available": False,
+            "requested_analysis_fps": 5.0,
+            "effective_analysis_fps": 5.0,
+        },
+        "scenes": [],
+        "scene_representative_frames": [],
+        "notable_intervals": [],
+        "notable_transitions": [],
+        "observations": [],
+        "limitations": [],
+        "artifacts": {},
     }
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-APP_VERSION = "0.3.0"
-SCHEMA_VERSION = "0.3"
+APP_VERSION = "0.4.1"
+SCHEMA_VERSION = "0.4"
 
 SOURCE_DIR_NAME = "source_videos"
 REPORTS_DIR_NAME = "reports"
@@ -29,6 +29,34 @@ NEAR_DUPLICATE_MEAN_ABS_DIFF = 0.03
 SEEK_ERROR_WARNING_SECONDS = 0.25
 PERCEPTUAL_HASH_SIZE = 8
 HISTOGRAM_BINS = 64
+
+TEMPORAL_REQUESTED_ANALYSIS_FPS = 5.0
+TEMPORAL_MAX_ANALYZED_FRAMES = 1500
+TEMPORAL_RESIZE_MAX_WIDTH = 320
+
+FARNEBACK_PYR_SCALE = 0.5
+FARNEBACK_LEVELS = 3
+FARNEBACK_WINSIZE = 15
+FARNEBACK_ITERATIONS = 3
+FARNEBACK_POLY_N = 5
+FARNEBACK_POLY_SIGMA = 1.2
+FLOW_STATIONARY_MAGNITUDE_THRESHOLD = 0.5
+
+SCENE_CUT_PIXEL_DIFFERENCE_THRESHOLD = 0.20
+SCENE_CUT_HISTOGRAM_CORRELATION_THRESHOLD = 0.80
+SCENE_CUT_PHASH_DISTANCE_THRESHOLD = 18
+ELEVATED_MOTION_FLOW_MAGNITUDE_THRESHOLD = 8.0
+
+STATIC_PHASH_DISTANCE_THRESHOLD = 2
+STATIC_PIXEL_DIFFERENCE_THRESHOLD = 0.01
+STATIC_MINIMUM_DURATION_SECONDS = 0.6
+
+SCENE_REPRESENTATIVE_FRAMES_PER_SCENE = 3
+MAX_SCENE_REPRESENTATIVE_FRAMES = 24
+
+FLOW_WARP_HIGH_RESIDUAL_THRESHOLD = 0.10
+MAX_NOTABLE_TRANSITIONS = 5
+NOTABLE_TRANSITION_MINIMUM_METRIC_REASONS = 1
 
 
 def heuristic_configuration() -> dict[str, object]:
@@ -69,4 +97,53 @@ def heuristic_configuration() -> dict[str, object]:
         "histogram_color_space": "grayscale",
         "histogram_bins": HISTOGRAM_BINS,
         "histogram_comparison_method": "OpenCV HISTCMP_CORREL",
+        "temporal_analysis": temporal_configuration(),
+    }
+
+
+def temporal_configuration() -> dict[str, object]:
+    return {
+        "requested_analysis_fps": TEMPORAL_REQUESTED_ANALYSIS_FPS,
+        "maximum_analyzed_frames": TEMPORAL_MAX_ANALYZED_FRAMES,
+        "resize_max_width": TEMPORAL_RESIZE_MAX_WIDTH,
+        "scene_cut_rules": {
+            "normalized_mean_absolute_difference_at_or_above": SCENE_CUT_PIXEL_DIFFERENCE_THRESHOLD,
+            "histogram_correlation_at_or_below": SCENE_CUT_HISTOGRAM_CORRELATION_THRESHOLD,
+            "perceptual_hash_distance_at_or_above": SCENE_CUT_PHASH_DISTANCE_THRESHOLD,
+            "logic": "pixel difference threshold and either histogram or pHash threshold",
+        },
+        "near_static_rules": {
+            "perceptual_hash_distance_at_or_below": STATIC_PHASH_DISTANCE_THRESHOLD,
+            "normalized_mean_absolute_difference_at_or_below": STATIC_PIXEL_DIFFERENCE_THRESHOLD,
+            "minimum_duration_seconds": STATIC_MINIMUM_DURATION_SECONDS,
+            "logic": "consecutive transitions meeting both thresholds are merged",
+        },
+        "optical_flow": {
+            "algorithm": "OpenCV Farneback dense optical flow",
+            "pyr_scale": FARNEBACK_PYR_SCALE,
+            "levels": FARNEBACK_LEVELS,
+            "winsize": FARNEBACK_WINSIZE,
+            "iterations": FARNEBACK_ITERATIONS,
+            "poly_n": FARNEBACK_POLY_N,
+            "poly_sigma": FARNEBACK_POLY_SIGMA,
+            "stationary_magnitude_threshold": FLOW_STATIONARY_MAGNITUDE_THRESHOLD,
+            "flow_warp_high_residual_threshold": FLOW_WARP_HIGH_RESIDUAL_THRESHOLD,
+        },
+        "notable_transition_ranking": {
+            "maximum_notable_transitions": MAX_NOTABLE_TRANSITIONS,
+            "minimum_metric_reasons": NOTABLE_TRANSITION_MINIMUM_METRIC_REASONS,
+            "method": "rank transitions within the current video across temporal-change metrics, merge duplicate selections, then sort by reason count and combined percentile",
+            "metrics": [
+                "normalized_mean_absolute_difference descending",
+                "perceptual_hash_distance descending",
+                "absolute_brightness_difference descending",
+                "mean_optical_flow descending",
+                "95th_percentile_optical_flow descending",
+                "histogram_correlation ascending",
+                "flow_warp_residual_mean descending",
+                "flow_warp_residual_95th_percentile descending",
+            ],
+        },
+        "scene_representative_frames_per_scene": SCENE_REPRESENTATIVE_FRAMES_PER_SCENE,
+        "maximum_scene_representative_frames": MAX_SCENE_REPRESENTATIVE_FRAMES,
     }

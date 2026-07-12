@@ -20,7 +20,7 @@ def calculate_sha256_bytes(data: bytes) -> str:
 
 
 def format_file_size(size_bytes: int) -> str:
-    units = ("B", "KB", "MB", "GB", "TB")
+    units = ("B", "KiB", "MiB", "GiB", "TiB")
     size = float(size_bytes)
     for unit in units:
         if size < 1024 or unit == units[-1]:
@@ -29,6 +29,16 @@ def format_file_size(size_bytes: int) -> str:
             return f"{size:.2f} {unit}"
         size /= 1024
     return f"{size_bytes} B"
+
+
+def artifact_record(path: Path, relative_path: str) -> dict[str, Any]:
+    size_bytes = path.stat().st_size
+    return {
+        "path": relative_path,
+        "size_bytes": size_bytes,
+        "size_human_readable": format_file_size(size_bytes),
+        "sha256": calculate_sha256(path),
+    }
 
 
 def format_duration(seconds: float | int | None) -> str | None:

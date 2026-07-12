@@ -51,7 +51,7 @@ def write_reports(
     analysis_dir: Path,
     report: dict[str, Any],
 ) -> dict[str, Path]:
-    validation = validate_report(report)
+    validation = validate_report(report, analysis_dir)
     report["validation"] = validation
     if validation["warnings"]:
         report["warnings"].extend(validation["warnings"])
@@ -74,6 +74,7 @@ def build_report(
     metadata: dict[str, Any],
     sampling: dict[str, Any],
     frame_analysis: dict[str, Any],
+    temporal_analysis: dict[str, Any],
     evidence: list[dict[str, Any]],
     warnings: list[str],
     observations: dict[str, list[dict[str, Any]]] | None = None,
@@ -84,6 +85,10 @@ def build_report(
         "missing_metadata": [],
         "temporal_heuristics": evidence,
     }
+    compatibility = {
+        "legacy_evidence_view_included": True,
+        "legacy_evidence_view_source": "observations",
+    }
     return {
         "schema_version": SCHEMA_VERSION,
         "analysis": analysis,
@@ -92,9 +97,11 @@ def build_report(
         "metadata": metadata,
         "sampling": sampling,
         "frame_analysis": frame_analysis,
+        "temporal_analysis": temporal_analysis,
         "heuristic_configuration": heuristic_configuration(),
         "observations": final_observations,
-        "evidence": evidence,
+        "evidence": _legacy_evidence_from_observations(final_observations),
+        "compatibility": compatibility,
         "warnings": warnings,
         "limitations": LIMITATIONS,
         "artifacts": {
@@ -119,6 +126,7 @@ def _build_text_report(report: dict[str, Any]) -> str:
     encoding = metadata["encoding"]
     sampling = report["sampling"]
     frame_summary = report["frame_analysis"]["summary"]
+    temporal = report.get("temporal_analysis", {})
 
     lines = [
         "VIDEO ANALYSIS REPORT",
@@ -131,6 +139,7 @@ def _build_text_report(report: dict[str, Any]) -> str:
         f"Completed: {analysis['completed_at']}",
         f"Processing duration: {analysis['processing_duration_seconds']} seconds",
         f"Schema version: {report['schema_version']}",
+        f"Application version: {report['analysis_environment'].get('application_version')}",
         "",
         "Source file",
         "-----------",
@@ -273,6 +282,8 @@ def _build_text_report(report: dict[str, Any]) -> str:
             ]
         )
 
+    _append_temporal_report(lines, temporal)
+
     lines.extend(["Observations", "------------"])
     for label, items in (
         ("Metadata facts", report["observations"]["metadata_facts"]),
@@ -283,7 +294,7 @@ def _build_text_report(report: dict[str, Any]) -> str:
         if not items:
             lines.append("- None")
         for item in items:
-            lines.append(f"- [{item['type']}] {item['description']}")
+            lines.append(f"- {item.get('observation_id', 'no-id')} [{item['type']}] {item['description']}")
             if item.get("interpretation"):
                 lines.append(f"  Interpretation: {item['interpretation']}")
 
@@ -302,6 +313,14 @@ def _build_text_report(report: dict[str, Any]) -> str:
             f"Histogram method: {config['histogram_comparison_method']} with {config['histogram_bins']} bins",
         ]
     )
+
+    lines.extend(["", "Report validation", "-----------------"])
+    if report["validation"]["errors"]:
+        lines.extend(f"- ERROR: {error}" for error in report["validation"]["errors"])
+    if report["validation"]["warnings"]:
+        lines.extend(f"- WARNING: {warning}" for warning in report["validation"]["warnings"])
+    if not report["validation"]["errors"] and not report["validation"]["warnings"]:
+        lines.append("- Passed")
 
     lines.extend(["", "Warnings", "--------"])
     if report["warnings"]:
@@ -323,6 +342,8 @@ def _build_text_report(report: dict[str, Any]) -> str:
             f"Raw ffprobe SHA-256: {_format((report['artifacts'].get('raw_ffprobe_report_artifact') or {}).get('sha256'))}",
             f"Frames directory: {report['artifacts']['frames_directory']}",
             f"Artifact paths relative to: {report['artifacts']['paths_relative_to']}",
+            f"Legacy evidence view included: {report['compatibility']['legacy_evidence_view_included']}",
+            f"Legacy evidence view source: {report['compatibility']['legacy_evidence_view_source']}",
             "",
         ]
     )
@@ -341,10 +362,113 @@ def _yes_no(value: bool) -> str:
 def _safe_filename_stem(stem: str) -> str:
     safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._-")
     return safe_stem or "video"
-    lines.extend(["", "Report validation", "-----------------"])
-    if report["validation"]["errors"]:
-        lines.extend(f"- ERROR: {error}" for error in report["validation"]["errors"])
-    if report["validation"]["warnings"]:
-        lines.extend(f"- WARNING: {warning}" for warning in report["validation"]["warnings"])
-    if not report["validation"]["errors"] and not report["validation"]["warnings"]:
-        lines.append("- Passed")
+
+
+def _append_temporal_report(lines: list[str], temporal: dict[str, Any]) -> None:
+    summary = temporal.get("summary", {})
+    configuration = temporal.get("configuration", {})
+    lines.extend(
+        [
+            "Sequential temporal analysis",
+            "----------------------------",
+            f"Status: {_format(temporal.get('status'))}",
+            f"Reason: {_format(temporal.get('reason'))}",
+            f"Requested analysis FPS: {_format(summary.get('requested_analysis_fps'))}",
+            f"Effective analysis FPS: {_format(summary.get('effective_analysis_fps'))}",
+            f"Temporal frames analyzed: {_format(summary.get('temporal_frames_analyzed'))}",
+            f"Transitions analyzed: {_format(summary.get('transitions_analyzed'))}",
+            f"Scene count: {_format(summary.get('scene_count'))}",
+            f"Scene-boundary candidates: {_format(summary.get('scene_boundary_candidate_count'))}",
+            f"Sustained near-static intervals: {_format(summary.get('sustained_near_static_interval_count'))}",
+            f"Ranked notable transitions: {_format(summary.get('notable_transition_count'))}",
+            f"Motion summary available: {_format(summary.get('motion_summary_available'))}",
+            f"Average flow-warp residual: {_format(summary.get('average_flow_warp_residual'))}",
+            f"Maximum flow-warp residual: {_format(summary.get('maximum_flow_warp_residual'))}",
+            f"Coverage timeline basis: {_format(temporal.get('coverage', {}).get('coverage_timeline_basis'))}",
+            f"Coverage ratio: {_format(temporal.get('coverage', {}).get('coverage_ratio'))}",
+            f"First/last temporal sample: {_format(temporal.get('coverage', {}).get('first_sample_timestamp_seconds'))} s to {_format(temporal.get('coverage', {}).get('last_sample_timestamp_seconds'))} s",
+            f"Frame cap: {_format(configuration.get('maximum_analyzed_frames'))}",
+            f"Resize max width: {_format(configuration.get('resize_max_width'))}",
+            "",
+            "Scene summaries",
+            "---------------",
+        ]
+    )
+    for scene in temporal.get("scenes", []):
+        lines.append(
+            f"Scene {scene['scene_index']}: {_format(scene['start_timestamp_seconds'])} s to "
+            f"{_format(scene['end_timestamp_seconds'])} s, samples={scene['temporal_sample_count']}"
+        )
+    if not temporal.get("scenes"):
+        lines.append("- None")
+
+    lines.extend(["", "Sustained near-static intervals", "-------------------------------"])
+    for interval in temporal.get("notable_intervals", []):
+        lines.append(
+            f"- {_format(interval['start_timestamp_seconds'])} s to "
+            f"{_format(interval['end_timestamp_seconds'])} s "
+            f"({interval['transition_count']} transitions)"
+        )
+    if not temporal.get("notable_intervals"):
+        lines.append("- None")
+
+    lines.extend(["", "Notable temporal transitions", "----------------------------"])
+    for transition in temporal.get("notable_transitions", []):
+        lines.append(
+            f"- Transition {transition['notable_transition_index'] + 1}: {_format(transition['start_timestamp_seconds'])} s to "
+            f"{_format(transition['end_timestamp_seconds'])} s, "
+            f"scene_boundary={transition['classification']['scene_boundary_candidate']}"
+        )
+        lines.append("  Ranking reasons:")
+        for reason in transition["notability"]["reasons"]:
+            lines.append(f"  - {reason}")
+        lines.append(f"  Flow-warp residual mean: {_format(transition['flow_warp_residual']['mean_normalized_residual'])}")
+        artifacts = transition.get("artifacts", {})
+        if artifacts:
+            lines.append("  Review artifacts:")
+            for label, artifact in artifacts.items():
+                lines.append(f"  - {label}: {artifact['path']}")
+        lines.append(f"  Interpretation: {transition['interpretation']}")
+    if not temporal.get("notable_transitions"):
+        lines.append("- None")
+
+    artifacts = temporal.get("artifacts", {})
+    metrics = artifacts.get("temporal_metrics_artifact") or {}
+    lines.extend(
+        [
+            "",
+            "Temporal artifacts",
+            "------------------",
+            f"Temporal metrics JSONL: {_format(metrics.get('path'))}",
+            f"Temporal metrics SHA-256: {_format(metrics.get('sha256'))}",
+            f"Temporal metrics size: {_format(metrics.get('size_human_readable'))}",
+            f"Scene frames directory: {_format(artifacts.get('scene_frames_directory'))}",
+            "",
+            "Temporal limitations",
+            "--------------------",
+        ]
+    )
+    lines.extend(f"- {item}" for item in temporal.get("limitations", []))
+
+
+def _legacy_evidence_from_observations(
+    observations: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    evidence: list[dict[str, Any]] = []
+    for category, items in observations.items():
+        for item in items:
+            evidence.append(
+                {
+                    "observation_id": item.get("observation_id"),
+                    "evidence_id": item.get("observation_id"),
+                    "category": category,
+                    "type": item.get("type"),
+                    "severity": item.get("severity", "info"),
+                    "description": item.get("description"),
+                    "interpretation": item.get("interpretation"),
+                    "metrics": item.get("metrics", {}),
+                    "timestamp_start": item.get("timestamp_start"),
+                    "timestamp_end": item.get("timestamp_end"),
+                }
+            )
+    return evidence
