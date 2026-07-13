@@ -17,7 +17,7 @@ LIMITATIONS = [
     "No AI-generation classifier is implemented.",
     "No deepfake detector is implemented.",
     "No face analysis is implemented.",
-    "No audio-signal analysis is implemented yet.",
+    "Basic audio-signal analysis is implemented when an audio stream is available; synthetic-speech detection is not implemented.",
     "No semantic-content analysis is implemented.",
     "Compressed or damaged videos may reduce reliability.",
 ]
@@ -75,6 +75,7 @@ def build_report(
     sampling: dict[str, Any],
     frame_analysis: dict[str, Any],
     temporal_analysis: dict[str, Any],
+    audio_analysis: dict[str, Any],
     evidence: list[dict[str, Any]],
     warnings: list[str],
     observations: dict[str, list[dict[str, Any]]] | None = None,
@@ -98,6 +99,7 @@ def build_report(
         "sampling": sampling,
         "frame_analysis": frame_analysis,
         "temporal_analysis": temporal_analysis,
+        "audio_analysis": audio_analysis,
         "heuristic_configuration": heuristic_configuration(),
         "observations": final_observations,
         "evidence": _legacy_evidence_from_observations(final_observations),
@@ -120,13 +122,14 @@ def _build_text_report(report: dict[str, Any]) -> str:
     metadata = report["metadata"]
     container = metadata["container"]
     video = metadata["video"]
-    audio = metadata["audio"]
+    audio_metadata = metadata["audio"]
     display = metadata["display"]
     duration = metadata["duration_comparison"]
     encoding = metadata["encoding"]
     sampling = report["sampling"]
     frame_summary = report["frame_analysis"]["summary"]
     temporal = report.get("temporal_analysis", {})
+    audio_analysis = report.get("audio_analysis", {})
 
     lines = [
         "VIDEO ANALYSIS REPORT",
@@ -181,14 +184,14 @@ def _build_text_report(report: dict[str, Any]) -> str:
         "",
         "Audio stream metadata",
         "---------------------",
-        f"Present: {audio['present']}",
-        f"Stream index: {_format(audio['index'])}",
-        f"Codec: {_format(audio['codec_name'])}",
-        f"Codec long name: {_format(audio['codec_long_name'])}",
-        f"Sample rate: {_format(audio['sample_rate'])}",
-        f"Channels: {_format(audio['channels'])}",
-        f"Channel layout: {_format(audio['channel_layout'])}",
-        f"Audio bit rate: {_format(audio['bit_rate_readable'])}",
+        f"Present: {audio_metadata['present']}",
+        f"Stream index: {_format(audio_metadata['index'])}",
+        f"Codec: {_format(audio_metadata['codec_name'])}",
+        f"Codec long name: {_format(audio_metadata['codec_long_name'])}",
+        f"Sample rate: {_format(audio_metadata['sample_rate'])}",
+        f"Channels: {_format(audio_metadata['channels'])}",
+        f"Channel layout: {_format(audio_metadata['channel_layout'])}",
+        f"Audio bit rate: {_format(audio_metadata['bit_rate_readable'])}",
         "",
         "Display information",
         "-------------------",
@@ -283,6 +286,7 @@ def _build_text_report(report: dict[str, Any]) -> str:
         )
 
     _append_temporal_report(lines, temporal)
+    _append_audio_report(lines, audio_analysis)
 
     lines.extend(["Observations", "------------"])
     for label, items in (
@@ -449,6 +453,85 @@ def _append_temporal_report(lines: list[str], temporal: dict[str, Any]) -> None:
         ]
     )
     lines.extend(f"- {item}" for item in temporal.get("limitations", []))
+
+
+def _append_audio_report(lines: list[str], audio: dict[str, Any]) -> None:
+    summary = audio.get("summary", {})
+    decoded = audio.get("decoded_audio", {})
+    global_metrics = audio.get("global_metrics", {})
+    artifact = audio.get("artifacts", {}).get("audio_metrics_artifact") or {}
+    lines.extend(
+        [
+            "",
+            "Audio analysis",
+            "--------------",
+            f"Status: {_format(audio.get('status'))}",
+            f"Reason code: {_format(audio.get('reason_code'))}",
+            f"Reason: {_format(audio.get('reason'))}",
+            f"Extraction status: {_format(audio.get('extraction', {}).get('status'))}",
+            f"Selected audio stream: {_format(audio.get('extraction', {}).get('selected_stream_index'))}",
+            f"Temporary cleanup: {_format(audio.get('temporary_file_cleanup'))}",
+            f"Audio available: {_format(summary.get('audio_available'))}",
+            f"Decoded duration: {_format(summary.get('decoded_duration_seconds'))}",
+            f"Window count: {_format(summary.get('window_count'))}",
+            f"Silence-like intervals: {_format(summary.get('silence_like_interval_count'))}",
+            f"Ranked energy transitions: {_format(summary.get('ranked_energy_transition_count'))}",
+            f"Sample rate: {_format(decoded.get('sample_rate_hz'))}",
+            f"Channels: {_format(decoded.get('channels'))}",
+            f"RMS amplitude: {_format(global_metrics.get('rms_amplitude'))}",
+            f"Peak absolute amplitude: {_format(global_metrics.get('peak_absolute_amplitude'))}",
+            f"Clipping ratio: {_format(global_metrics.get('clipping_ratio'))}",
+            f"Silence ratio: {_format(global_metrics.get('silence_ratio'))}",
+            f"Zero-crossing rate: {_format(global_metrics.get('zero_crossing_rate'))}",
+            f"Diagnostic stage: {_format(audio.get('diagnostics', {}).get('stage'))}",
+            "",
+            "Audio channel metrics",
+            "---------------------",
+        ]
+    )
+    channel_metrics = global_metrics.get("channel_metrics") or []
+    if not channel_metrics:
+        lines.append("- None")
+    for channel in channel_metrics:
+        lines.append(
+            f"- Channel {channel['channel_index']}: RMS={channel['rms_amplitude']}, Peak={channel['peak_absolute_amplitude']}"
+        )
+    lines.extend(
+        [
+            "",
+            "Audio silence-like intervals",
+            "----------------------------",
+        ]
+    )
+    intervals = audio.get("silence_intervals", [])
+    if not intervals:
+        lines.append("- None")
+    for interval in intervals:
+        lines.append(
+            f"- {interval['interval_id']}: {_format(interval['start_timestamp_seconds'])} s to {_format(interval['end_timestamp_seconds'])} s"
+        )
+    lines.extend(["", "Ranked audio energy transitions", "-------------------------------"])
+    transitions = audio.get("notable_transitions", [])
+    if not transitions:
+        lines.append("- None")
+    for transition in transitions:
+        lines.append(
+            f"- {transition['transition_id']}: {_format(transition['start_timestamp_seconds'])} s, RMS {transition['rms_before']} -> {transition['rms_after']}"
+        )
+    lines.extend(
+        [
+            "",
+            "Audio artifacts",
+            "---------------",
+            f"Audio metrics JSONL: {_format(artifact.get('path'))}",
+            f"Audio metrics SHA-256: {_format(artifact.get('sha256'))}",
+            f"Audio metrics size: {_format(artifact.get('size_human_readable'))}",
+            "",
+            "Audio limitations",
+            "-----------------",
+        ]
+    )
+    lines.extend(f"- {item}" for item in audio.get("limitations", []))
 
 
 def _legacy_evidence_from_observations(

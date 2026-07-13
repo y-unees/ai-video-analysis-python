@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-APP_VERSION = "0.4.1"
-SCHEMA_VERSION = "0.4"
+APP_VERSION = "0.5.1"
+SCHEMA_VERSION = "0.5"
 
 SOURCE_DIR_NAME = "source_videos"
 REPORTS_DIR_NAME = "reports"
@@ -57,6 +57,18 @@ MAX_SCENE_REPRESENTATIVE_FRAMES = 24
 FLOW_WARP_HIGH_RESIDUAL_THRESHOLD = 0.10
 MAX_NOTABLE_TRANSITIONS = 5
 NOTABLE_TRANSITION_MINIMUM_METRIC_REASONS = 1
+
+AUDIO_WINDOW_SECONDS = 0.5
+AUDIO_HOP_SECONDS = 0.25
+AUDIO_SILENCE_SAMPLE_AMPLITUDE_THRESHOLD = 0.01
+AUDIO_SILENCE_WINDOW_RMS_THRESHOLD = 0.01
+AUDIO_MINIMUM_SILENCE_INTERVAL_SECONDS = 0.5
+AUDIO_CLIPPING_AMPLITUDE_THRESHOLD = 0.99
+AUDIO_CLIPPING_RATIO_WARNING_THRESHOLD = 0.01
+AUDIO_ENERGY_CHANGE_RATIO_THRESHOLD = 3.0
+AUDIO_MAX_REVIEW_TRANSITIONS = 5
+AUDIO_MAX_NOTABLE_TRANSITIONS = AUDIO_MAX_REVIEW_TRANSITIONS
+AUDIO_EXTRACTION_TIMEOUT_SECONDS = 60
 
 
 def heuristic_configuration() -> dict[str, object]:
@@ -132,7 +144,11 @@ def temporal_configuration() -> dict[str, object]:
         "notable_transition_ranking": {
             "maximum_notable_transitions": MAX_NOTABLE_TRANSITIONS,
             "minimum_metric_reasons": NOTABLE_TRANSITION_MINIMUM_METRIC_REASONS,
-            "method": "rank transitions within the current video across temporal-change metrics, merge duplicate selections, then sort by reason count and combined percentile",
+            "method": "rank transitions within the current video across the complete configured metric set, merge duplicate selections, then sort by combined percentile, reason count, start timestamp, and transition ID",
+            "selection_basis": "relative_within_video",
+            "absolute_significance_assessed": False,
+            "combined_percentile_metric_count": 8,
+            "missing_metric_behavior": "explicitly recorded as unavailable and excluded from available_metric_count",
             "metrics": [
                 "normalized_mean_absolute_difference descending",
                 "perceptual_hash_distance descending",
@@ -146,4 +162,20 @@ def temporal_configuration() -> dict[str, object]:
         },
         "scene_representative_frames_per_scene": SCENE_REPRESENTATIVE_FRAMES_PER_SCENE,
         "maximum_scene_representative_frames": MAX_SCENE_REPRESENTATIVE_FRAMES,
+    }
+
+
+def audio_configuration() -> dict[str, object]:
+    return {
+        "window_seconds": AUDIO_WINDOW_SECONDS,
+        "hop_seconds": AUDIO_HOP_SECONDS,
+        "silence_sample_amplitude_threshold": AUDIO_SILENCE_SAMPLE_AMPLITUDE_THRESHOLD,
+        "silence_window_rms_threshold": AUDIO_SILENCE_WINDOW_RMS_THRESHOLD,
+        "minimum_silence_interval_seconds": AUDIO_MINIMUM_SILENCE_INTERVAL_SECONDS,
+        "clipping_amplitude_threshold": AUDIO_CLIPPING_AMPLITUDE_THRESHOLD,
+        "clipping_ratio_warning_threshold": AUDIO_CLIPPING_RATIO_WARNING_THRESHOLD,
+        "energy_change_ratio_threshold": AUDIO_ENERGY_CHANGE_RATIO_THRESHOLD,
+        "maximum_notable_transitions": AUDIO_MAX_NOTABLE_TRANSITIONS,
+        "extraction_timeout_seconds": AUDIO_EXTRACTION_TIMEOUT_SECONDS,
+        "interpretation": "Starter thresholds for lightweight local signal observations, not forensic standards.",
     }

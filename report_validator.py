@@ -67,6 +67,8 @@ def validate_report(report: dict[str, Any], base_dir: Path | None = None) -> dic
     _check_non_negative_counts(report, errors)
     _check_analysis_times(report, errors)
     _check_temporal_analysis(report.get("temporal_analysis", {}), errors, warnings, base_dir)
+    _check_audio_analysis(report.get("audio_analysis", {}), errors, warnings, base_dir)
+    _check_observation_scopes(report.get("observations", {}), errors)
     _check_evidence_compatibility(report, errors)
 
     artifacts = report.get("artifacts", {})
@@ -78,6 +80,95 @@ def validate_report(report: dict[str, Any], base_dir: Path | None = None) -> dic
             errors.append(f"Artifact reference is missing or not relative: {artifact_key}.")
 
     return {"errors": errors, "warnings": warnings}
+
+
+def _check_audio_analysis(
+    audio: dict[str, Any],
+    errors: list[str],
+    warnings: list[str],
+    base_dir: Path | None,
+) -> None:
+    if not audio:
+        errors.append("Audio analysis section is missing.")
+        return
+    if audio.get("status") not in {"completed", "partial", "skipped", "failed"}:
+        errors.append("Audio analysis has an invalid status.")
+    if audio.get("status") in {"failed", "skipped"} and not audio.get("reason_code"):
+        errors.append("Audio analysis failure/skip is missing a reason code.")
+    cleanup = audio.get("temporary_file_cleanup", {})
+    if audio.get("extraction", {}).get("status") == "completed":
+        if cleanup.get("attempted") is not True:
+            errors.append("Audio temporary-file cleanup was not recorded.")
+    decoded = audio.get("decoded_audio", {})
+    if decoded:
+        if decoded.get("sample_rate_hz", 1) <= 0:
+            errors.append("Decoded audio sample rate is not positive.")
+        if decoded.get("channels", 1) <= 0:
+            errors.append("Decoded audio channel count is not positive.")
+        if decoded.get("frame_count", 0) < 0:
+            errors.append("Decoded audio frame count is negative.")
+    metrics = audio.get("global_metrics", {})
+    for key in ("rms_amplitude", "peak_absolute_amplitude", "clipping_ratio", "silence_ratio", "zero_crossing_rate"):
+        value = metrics.get(key)
+        if value is not None and not (0 <= value <= 1):
+            errors.append(f"Audio metric is outside 0-1: {key}.")
+    intervals = audio.get("silence_intervals", [])
+    previous_end = None
+    interval_ids = set()
+    minimum = audio.get("configuration", {}).get("minimum_silence_interval_seconds", 0)
+    for interval in intervals:
+        interval_id = interval.get("interval_id")
+        if not interval_id or interval_id in interval_ids:
+            errors.append("Audio silence interval IDs are missing or duplicated.")
+        interval_ids.add(interval_id)
+        if interval.get("duration_seconds", 0) < minimum:
+            errors.append("Audio silence interval is shorter than configured minimum.")
+        if previous_end is not None and interval["start_timestamp_seconds"] < previous_end:
+            errors.append("Audio silence intervals overlap.")
+        previous_end = interval["end_timestamp_seconds"]
+    transition_ids = set()
+    for transition in audio.get("notable_transitions", []):
+        transition_id = transition.get("transition_id")
+        if not transition_id or transition_id in transition_ids:
+            errors.append("Audio transition IDs are missing or duplicated.")
+        transition_ids.add(transition_id)
+        if transition.get("selection_basis") != "relative_within_audio":
+            errors.append("Audio transition selection basis is missing or invalid.")
+    artifact = audio.get("artifacts", {}).get("audio_metrics_artifact")
+    if artifact:
+        _check_artifact(artifact, base_dir, errors, warnings)
+    if audio.get("status") == "completed":
+        if not metrics:
+            errors.append("Completed audio analysis is missing global metrics.")
+        if not decoded:
+            errors.append("Completed audio analysis is missing decoded audio details.")
+        if audio.get("extraction", {}).get("status") != "completed":
+            errors.append("Completed audio analysis has incomplete extraction details.")
+        if not artifact:
+            errors.append("Completed audio analysis is missing audio metrics artifact.")
+
+
+def _check_observation_scopes(observations: dict[str, Any], errors: list[str]) -> None:
+    affirmative = (
+        "proves the video is ai-generated",
+        "video is definitely manipulated",
+        "tampering is confirmed",
+        "manipulation is confirmed",
+        "ai generation is confirmed",
+        "definitely ai-generated",
+    )
+    for items in observations.values():
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            observation_id = item.get("observation_id", "unknown-observation")
+            if item.get("supports_authenticity_verdict") is True:
+                errors.append(f"{observation_id}: observation claims support for an authenticity verdict.")
+            text = " ".join(str(item.get(key, "")).lower() for key in ("description", "interpretation"))
+            if any(phrase in text for phrase in affirmative):
+                errors.append(f"{observation_id}: unsupported affirmative verdict language.")
 
 
 def _check_temporal_analysis(
@@ -184,14 +275,24 @@ def _check_temporal_analysis(
         if ratio is not None and not (-0.000001 <= ratio <= 1.000001):
             errors.append("Temporal coverage ratio is outside 0-1.")
 
-    forbidden = ("proof of ai", "proof of manipulation", "proves manipulation", "proves ai")
+    forbidden = (
+        "proves the video is ai-generated",
+        "video is definitely manipulated",
+        "tampering is confirmed",
+        "manipulation is confirmed",
+        "ai generation is confirmed",
+        "definitely ai-generated",
+    )
     for observation in temporal.get("observations", []):
+        observation_id = observation.get("observation_id", "unknown-observation")
+        if observation.get("supports_authenticity_verdict") is True:
+            errors.append(f"{observation_id}: observation claims support for an authenticity verdict.")
         text = " ".join(
             str(observation.get(key, "")).lower()
             for key in ("description", "interpretation")
         )
         if any(phrase in text for phrase in forbidden):
-            errors.append("Temporal observation contains unsupported verdict language.")
+            errors.append(f"{observation_id}: unsupported affirmative verdict language.")
 
 
 def _finite_or_none(value: Any) -> bool:

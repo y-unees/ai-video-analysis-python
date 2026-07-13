@@ -6,7 +6,7 @@ Terminal-only, local-first video-analysis MVP for metadata inspection, represent
 
 - Python 3.10 or newer
 - FFmpeg with both `ffmpeg` and `ffprobe` available in your system PATH
-- Python packages from `requirements.txt`
+- Python packages from `requirements.txt` for OpenCV/Pillow/ImageHash/NumPy-based local analysis
 
 If FFmpeg is installed inside a virtual environment or local tool directory, activate that environment before running `python main.py` so the app can find `ffmpeg` and `ffprobe`.
 
@@ -52,6 +52,7 @@ report_writer.py        JSON/TXT report rendering
 report_validator.py     Internal report consistency checks
 config.py               Version and heuristic configuration constants
 temporal/               v0.4 sequential temporal-analysis modules
+audio/                  v0.5 lightweight audio-signal analysis modules
 tests/                  Lightweight synthetic/unit tests
 ```
 
@@ -66,7 +67,9 @@ reports/
     ├── report.txt
     ├── ffprobe_raw.json
     ├── temporal_metrics.jsonl
+    ├── audio_metrics.jsonl
     ├── frames/
+    ├── transition_frames/
     └── scene_frames/
 ```
 
@@ -90,12 +93,33 @@ Paths in reports are relative to the report directory or project directory unles
 - Ranks a bounded set of notable transitions for human review without changing scene-boundary rules.
 - Calculates flow-warp residuals to show how well estimated motion explains the next sampled frame.
 - Saves before/after/difference/residual artifacts for ranked notable transitions in `transition_frames/`.
+- Extracts the selected audio stream with FFmpeg into temporary PCM WAV for local analysis.
+- Calculates lightweight audio-signal metrics, silence-like intervals, clipping-like samples, and ranked energy transitions.
+- Writes full windowed audio metrics to `audio_metrics.jsonl` and hashes the artifact.
 
 ## Schema Notes
 
-Current schema: `0.4`.
+Current schema: `0.5`.
 
-Application version: `0.4.1`.
+Application version: `0.5.1`.
+
+Important fixes in `0.5.1`:
+
+- Fixed an audio-analysis startup failure caused by inconsistent string and `pathlib.Path` handling.
+- Public audio functions accept both string paths and `Path` objects.
+- Audio extraction records stable reason codes, cleanup status, and diagnostics without exposing temporary absolute paths.
+- Windowed audio records include actual duration and sample count.
+- Temporary PCM WAV files are cleaned after analysis unless debug retention is added in the future.
+
+Important additions in `0.5`:
+
+- Adds `audio_analysis` with extraction, decoded PCM details, timeline comparison, global metrics, silence-like intervals, ranked energy transitions, observations, limitations, and artifacts.
+- Adds `audio_metrics.jsonl` with one windowed audio record per line.
+- Keeps temporary WAV extraction artifacts out of reports and deletes them after analysis.
+- Uses Python `wave` plus NumPy for PCM analysis.
+- Fixes v0.4.1 validator behavior so negative disclaimers such as "not proof" are allowed, while affirmative unsupported verdicts are rejected.
+- Corrects temporal coverage to use a normalized selected-video-stream timeline.
+- Makes ranked visual transition percentiles use the complete configured metric set when available.
 
 Important additions in `0.4.1`:
 
@@ -129,13 +153,15 @@ Important additions in `0.4`:
 - Ranked notable transitions are selected because they stand out in one or more measurements within the current video. They are review prompts, not verdicts.
 - Flow-warp residuals can increase because of scene changes, occlusion, rapid motion, motion blur, lighting changes, compression, inaccurate optical flow, zoom, camera movement, object deformation, or generated temporal inconsistency.
 - Sustained near-static intervals may be ordinary static shots, low motion, intentional freeze frames, repeated content, or normal recording behavior.
+- Audio RMS, clipping, silence-like intervals, and energy transitions are basic signal measurements only. They cannot determine whether speech is natural, cloned, synthesized, edited, or authentic.
 
 ## What It Does Not Do
 
 - No AI-generation classifier.
 - No deepfake detector.
 - No face analysis.
-- No audio-signal analysis.
+- No audio authenticity analysis.
+- No synthetic-speech detector.
 - No semantic-content analysis.
 - No Gemini integration.
 - No C2PA provenance analysis.
@@ -143,7 +169,7 @@ Important additions in `0.4`:
 
 All temporal flags are heuristic observations only. They may point to normal camera motion, lighting changes, compression, scene transitions, or other ordinary video behavior. They are not verdicts and are not proof of editing, deception, tampering, AI generation, or authenticity.
 
-The analyzer may identify transitions or intervals that deserve review, but v0.4.1 does not contain a trained AI-video detector or direct provenance verifier.
+The analyzer may identify visual or audio transitions and intervals that deserve review, but v0.5.1 does not contain a trained AI-video detector, audio-authenticity detector, or direct provenance verifier.
 
 ## 🧪 Tests
 

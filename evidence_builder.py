@@ -150,6 +150,8 @@ def _observation(
         "observation_id": f"temporal-{number:03d}",
         "type": evidence_type,
         "severity": "info",
+        "conclusion_scope": "non_conclusive_observation",
+        "supports_authenticity_verdict": False,
         "timestamp_start": timestamp_start,
         "timestamp_end": timestamp_end,
         "description": description,

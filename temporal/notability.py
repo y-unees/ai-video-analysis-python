@@ -21,47 +21,60 @@ def rank_notable_transitions(transitions: list[dict[str, Any]]) -> list[dict[str
     if not transitions:
         return []
 
-    selected: dict[str, dict[str, Any]] = {}
+    buckets: dict[str, dict[str, Any]] = {
+        transition["transition_id"]: {
+            "transition": transition,
+            "reasons": [],
+            "metric_ranks": {},
+            "percentiles": [],
+        }
+        for transition in transitions
+    }
     metric_count = max(1, len(transitions))
     top_k = min(MAX_NOTABLE_TRANSITIONS, metric_count)
 
     for metric_path, highest_reason, high_reason, descending in METRICS:
         ranked = _rank_metric(transitions, metric_path, descending)
+        ranked_ids = {transition["transition_id"] for transition, _value in ranked}
+        for transition in transitions:
+            if transition["transition_id"] not in ranked_ids:
+                buckets[transition["transition_id"]]["metric_ranks"][metric_path] = {
+                    "rank": None,
+                    "value": None,
+                    "percentile": None,
+                    "available": False,
+                    "sort": "descending" if descending else "ascending",
+                }
         if not ranked:
             continue
-        for rank_index, (transition, value) in enumerate(ranked[:top_k], start=1):
-            transition_id = transition["transition_id"]
-            bucket = selected.setdefault(
-                transition_id,
-                {
-                    "transition": transition,
-                    "reasons": [],
-                    "metric_ranks": {},
-                    "percentiles": [],
-                },
-            )
-            reason = highest_reason if rank_index == 1 else high_reason
-            if reason not in bucket["reasons"]:
-                bucket["reasons"].append(reason)
+        for rank_index, (transition, value) in enumerate(ranked, start=1):
             percentile = _percentile(rank_index, len(ranked))
+            bucket = buckets[transition["transition_id"]]
             bucket["metric_ranks"][metric_path] = {
                 "rank": rank_index,
                 "value": value,
                 "percentile": percentile,
+                "available": True,
                 "sort": "descending" if descending else "ascending",
             }
             bucket["percentiles"].append(percentile)
+        for rank_index, (transition, value) in enumerate(ranked[:top_k], start=1):
+            bucket = buckets[transition["transition_id"]]
+            reason = highest_reason if rank_index == 1 else high_reason
+            if reason not in bucket["reasons"]:
+                bucket["reasons"].append(reason)
 
     ranked_buckets = [
         bucket
-        for bucket in selected.values()
+        for bucket in buckets.values()
         if len(bucket["reasons"]) >= NOTABLE_TRANSITION_MINIMUM_METRIC_REASONS
     ]
     ranked_buckets.sort(
         key=lambda bucket: (
-            -len(bucket["reasons"]),
             -_average(bucket["percentiles"]),
+            -len(bucket["reasons"]),
             bucket["transition"]["from_sample_index"],
+            bucket["transition"]["transition_id"],
         )
     )
 
@@ -73,6 +86,10 @@ def rank_notable_transitions(transitions: list[dict[str, Any]]) -> list[dict[str
             "reason_count": len(bucket["reasons"]),
             "reasons": sorted(bucket["reasons"]),
             "combined_percentile": round(_average(bucket["percentiles"]), 6),
+            "combined_percentile_metric_count": len(METRICS),
+            "available_metric_count": len(bucket["percentiles"]),
+            "selection_basis": "relative_within_video",
+            "absolute_significance_assessed": False,
             "metric_ranks": bucket["metric_ranks"],
         }
         transition["notable_transition_index"] = notable_index
@@ -87,6 +104,10 @@ def rank_notable_transitions(transitions: list[dict[str, Any]]) -> list[dict[str
                 "reason_count": 0,
                 "reasons": [],
                 "combined_percentile": None,
+                "combined_percentile_metric_count": len(METRICS),
+                "available_metric_count": 0,
+                "selection_basis": "relative_within_video",
+                "absolute_significance_assessed": False,
                 "metric_ranks": {},
             },
         )

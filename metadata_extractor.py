@@ -356,6 +356,8 @@ def _observation(observation_id: str, observation_type: str, description: str) -
         "observation_id": observation_id,
         "type": observation_type,
         "severity": "info",
+        "conclusion_scope": "non_conclusive_observation",
+        "supports_authenticity_verdict": False,
         "description": description,
         "interpretation": "This is a factual metadata observation and is not proof of editing or tampering.",
         "metrics": {},

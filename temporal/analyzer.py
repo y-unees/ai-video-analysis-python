@@ -349,6 +349,8 @@ def _observation(observation_id: str, observation_type: str, description: str, i
         "observation_id": observation_id,
         "type": observation_type,
         "severity": "info",
+        "conclusion_scope": "non_conclusive_observation",
+        "supports_authenticity_verdict": False,
         "description": description,
         "interpretation": interpretation,
     }
@@ -429,13 +431,9 @@ def _coverage(samples: list[dict[str, Any]], metadata: dict[str, Any]) -> dict[s
     first = samples[0]["sample"]["timestamp_seconds"]
     last = samples[-1]["sample"]["timestamp_seconds"]
     video = metadata.get("video", {})
-    source_start = video.get("start_time")
     source_duration = video.get("duration_seconds") or metadata.get("container", {}).get("duration_seconds")
-    source_end = (
-        round(source_start + source_duration, 6)
-        if source_start is not None and source_duration is not None
-        else None
-    )
+    source_start = 0.0 if source_duration is not None else None
+    source_end = round(source_duration, 6) if source_duration is not None else None
     analyzed_span = max(0.0, last - first)
     source_span = source_duration if source_duration is not None else None
     ratio = (
@@ -444,7 +442,7 @@ def _coverage(samples: list[dict[str, Any]], metadata: dict[str, Any]) -> dict[s
         else None
     )
     return {
-        "coverage_timeline_basis": "selected_video_stream",
+        "coverage_timeline_basis": "selected_video_stream_normalized",
         "first_sample_timestamp_seconds": first,
         "last_sample_timestamp_seconds": last,
         "source_video_start_seconds": source_start,

@@ -150,8 +150,8 @@ class ReliabilityTests(unittest.TestCase):
                 "status": "completed",
             },
             analysis_environment={
-                "application_version": "0.4.1",
-                "report_schema_version": "0.4",
+                "application_version": "0.5.1",
+                "report_schema_version": "0.5",
             },
             source={
                 "filename": "sample.mp4",
@@ -175,6 +175,7 @@ class ReliabilityTests(unittest.TestCase):
             },
             frame_analysis=frame_analysis,
             temporal_analysis=_minimal_temporal_analysis(),
+            audio_analysis=_minimal_audio_analysis(),
             evidence=[],
             observations={"metadata_facts": [], "missing_metadata": [], "temporal_heuristics": []},
             warnings=[],
@@ -203,6 +204,7 @@ def _minimal_metadata() -> dict[str, object]:
 def _minimal_temporal_analysis() -> dict[str, object]:
     return {
         "status": "skipped",
+        "reason_code": "test",
         "reason": "test",
         "configuration": {
             "requested_analysis_fps": 5.0,
@@ -223,6 +225,26 @@ def _minimal_temporal_analysis() -> dict[str, object]:
         "scenes": [],
         "scene_representative_frames": [],
         "notable_intervals": [],
+        "notable_transitions": [],
+        "observations": [],
+        "limitations": [],
+        "artifacts": {},
+    }
+
+
+def _minimal_audio_analysis() -> dict[str, object]:
+    return {
+        "status": "skipped",
+        "reason_code": "test",
+        "reason": "test",
+        "configuration": {},
+        "extraction": {},
+        "decoded_audio": {},
+        "timeline": {},
+        "summary": {"audio_available": False, "analysis_metrics_available": False},
+        "global_metrics": {},
+        "silence_intervals": [],
+        "clipping_intervals": [],
         "notable_transitions": [],
         "observations": [],
         "limitations": [],

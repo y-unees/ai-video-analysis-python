@@ -6,6 +6,7 @@ from pathlib import Path
 from time import perf_counter
 
 from config import REPORTS_DIR_NAME, SOURCE_DIR_NAME
+from audio.analyzer import analyze_audio
 from dependency_checker import missing_python_dependencies, tool_is_available
 from environment_info import collect_environment_info
 from evidence_builder import build_temporal_evidence
@@ -142,6 +143,35 @@ def main() -> int:
                 "artifacts": {},
             }
 
+        print("Running audio analysis...")
+        try:
+            audio_analysis, audio_warnings = analyze_audio(
+                video_path=selected_video,
+                analysis_dir=analysis_dir,
+                metadata=metadata,
+            )
+            warnings.extend(audio_warnings)
+        except Exception as error:
+            warnings.append(f"Audio analysis failed: {error}")
+            audio_analysis = {
+                "status": "failed",
+                "reason": str(error),
+                "configuration": {},
+                "extraction": {},
+                "decoded_audio": {},
+                "timeline": {},
+                "summary": {"audio_available": False, "analysis_metrics_available": False},
+                "global_metrics": {},
+                "silence_intervals": [],
+                "clipping_intervals": [],
+                "notable_transitions": [],
+                "observations": [],
+                "limitations": [
+                    "Audio analysis failed, but visual analysis may still be available."
+                ],
+                "artifacts": {},
+            }
+
         temporal_evidence = build_temporal_evidence(
             frames=frame_analysis["frames"],
             comparisons=frame_analysis["comparisons"],
@@ -155,6 +185,7 @@ def main() -> int:
         observations["temporal_heuristics"].extend(
             temporal_analysis.get("observations", [])
         )
+        observations["audio_observations"] = audio_analysis.get("observations", [])
 
         analysis_completed_at = datetime.now().astimezone()
         processing_duration = round(perf_counter() - started_perf, 3)
@@ -177,6 +208,7 @@ def main() -> int:
             sampling=sampling,
             frame_analysis=frame_analysis,
             temporal_analysis=temporal_analysis,
+            audio_analysis=audio_analysis,
             evidence=temporal_evidence,
             observations=observations,
             warnings=warnings,
