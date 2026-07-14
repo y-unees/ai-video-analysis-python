@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ai_interpretation_response.schema.json",
+  "title": "AI Interpretation Response Contract",
+  "type": "object",
+  "required": [
+    "assessment",
+    "supporting_findings",
+    "weak_or_ambiguous_findings",
+    "conflicting_or_non_supporting_findings",
+    "priority_timestamps",
+    "alternative_explanations",
+    "missing_evidence",
+    "recommended_manual_review",
+    "limitations"
+  ],
+  "properties": {
+    "assessment": {
+      "type": "object",
+      "required": [
+        "ai_generation_possibility",
+        "evidence_strength",
+        "numeric_probability",
+        "probability_source"
+      ],
+      "properties": {
+        "ai_generation_possibility": {
+          "type": "string",
+          "enum": ["low", "moderate", "elevated", "indeterminate"]
+        },
+        "evidence_strength": {
+          "type": "string",
+          "enum": ["limited", "moderate", "strong", "indeterminate"]
+        },
+        "numeric_probability": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "probability_source": {
+          "type": ["string", "null"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "numeric_probability": {"type": "number"}
+            },
+            "required": ["numeric_probability"]
+          },
+          "then": {
+            "properties": {
+              "probability_source": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "supporting_findings": {"type": "array", "items": {"type": "object"}},
+    "weak_or_ambiguous_findings": {"type": "array", "items": {"type": "object"}},
+    "conflicting_or_non_supporting_findings": {"type": "array", "items": {"type": "object"}},
+    "priority_timestamps": {"type": "array", "items": {"type": "object"}},
+    "alternative_explanations": {"type": "array", "items": {"type": "string"}},
+    "missing_evidence": {"type": "array", "items": {"type": "object"}},
+    "recommended_manual_review": {"type": "array", "items": {"type": "object"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

@@ -21,7 +21,9 @@ from report_writer import (
     write_reports,
 )
 from temporal.analyzer import analyze_temporal
+from unified_evidence import build_unified_evidence_artifacts
 from video_selector import choose_video, find_video_files
+from visual_consistency import analyze_visual_consistency
 
 
 SOURCE_DIR = Path(SOURCE_DIR_NAME)
@@ -172,6 +174,33 @@ def main() -> int:
                 "artifacts": {},
             }
 
+        print("Running visual consistency analysis...")
+        try:
+            visual_consistency_analysis, visual_consistency_warnings = analyze_visual_consistency(
+                analysis_dir=analysis_dir,
+                temporal_analysis=temporal_analysis,
+            )
+            warnings.extend(visual_consistency_warnings)
+        except Exception as error:
+            warnings.append(f"Visual consistency analysis failed: {error}")
+            visual_consistency_analysis = {
+                "status": "failed",
+                "reason_code": "visual_consistency_unhandled_exception",
+                "reason": str(error),
+                "configuration": {},
+                "summary": {"metrics_available": False},
+                "transition_summaries": [],
+                "sustained_intervals": [],
+                "ranked_review_transitions": [],
+                "observations": [],
+                "limitations": [
+                    "Visual consistency analysis failed, but earlier analysis stages may still be available."
+                ],
+                "artifacts": {},
+            }
+
+        temporal_analysis.pop("_runtime", None)
+
         temporal_evidence = build_temporal_evidence(
             frames=frame_analysis["frames"],
             comparisons=frame_analysis["comparisons"],
@@ -186,6 +215,10 @@ def main() -> int:
             temporal_analysis.get("observations", [])
         )
         observations["audio_observations"] = audio_analysis.get("observations", [])
+        observations["visual_consistency_observations"] = visual_consistency_analysis.get(
+            "observations",
+            [],
+        )
 
         analysis_completed_at = datetime.now().astimezone()
         processing_duration = round(perf_counter() - started_perf, 3)
@@ -209,11 +242,23 @@ def main() -> int:
             frame_analysis=frame_analysis,
             temporal_analysis=temporal_analysis,
             audio_analysis=audio_analysis,
+            visual_consistency_analysis=visual_consistency_analysis,
             evidence=temporal_evidence,
             observations=observations,
             warnings=warnings,
             raw_ffprobe_artifact=raw_ffprobe_artifact,
         )
+
+        print("Building unified evidence bundle...")
+        unified_evidence, unified_warnings = build_unified_evidence_artifacts(
+            analysis_dir=analysis_dir,
+            report=report,
+        )
+        warnings.extend(unified_warnings)
+        report["warnings"] = warnings
+        report["unified_evidence"] = unified_evidence
+        if unified_evidence.get("status") != "completed" and report["analysis"]["status"] == "completed":
+            report["analysis"]["status"] = "completed_with_warnings"
 
         print("Creating reports...")
         report_paths = write_reports(analysis_dir=analysis_dir, report=report)

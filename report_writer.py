@@ -18,6 +18,8 @@ LIMITATIONS = [
     "No deepfake detector is implemented.",
     "No face analysis is implemented.",
     "Basic audio-signal analysis is implemented when an audio stream is available; synthetic-speech detection is not implemented.",
+    "Visual consistency analysis provides regional review measurements only and does not produce authenticity, manipulation, or AI-generation verdicts.",
+    "Unified evidence review priority is an ordering aid for human review and is not an AI probability or authenticity score.",
     "No semantic-content analysis is implemented.",
     "Compressed or damaged videos may reduce reliability.",
 ]
@@ -80,6 +82,7 @@ def build_report(
     warnings: list[str],
     observations: dict[str, list[dict[str, Any]]] | None = None,
     raw_ffprobe_artifact: dict[str, Any] | None = None,
+    visual_consistency_analysis: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     final_observations = observations or {
         "metadata_facts": [],
@@ -100,6 +103,35 @@ def build_report(
         "frame_analysis": frame_analysis,
         "temporal_analysis": temporal_analysis,
         "audio_analysis": audio_analysis,
+        "visual_consistency_analysis": visual_consistency_analysis or {
+            "status": "skipped",
+            "reason_code": "not_run",
+            "reason": "Visual consistency analysis was not run.",
+            "configuration": {},
+            "summary": {"metrics_available": False},
+            "transition_summaries": [],
+            "sustained_intervals": [],
+            "ranked_review_transitions": [],
+            "observations": [],
+            "limitations": [],
+            "artifacts": {},
+        },
+        "unified_evidence": {
+            "status": "pending",
+            "reason_code": "generated_after_base_report",
+            "reason": "Unified evidence artifacts are generated after the base report object is assembled.",
+            "configuration": {},
+            "summary": {},
+            "timeline_configuration": {},
+            "evidence_domains": {},
+            "review_highlights": [],
+            "ambiguous_findings": [],
+            "normal_or_non_supporting_findings": [],
+            "missing_evidence": [],
+            "artifacts": {},
+            "validation": {"errors": [], "warnings": []},
+            "limitations": [],
+        },
         "heuristic_configuration": heuristic_configuration(),
         "observations": final_observations,
         "evidence": _legacy_evidence_from_observations(final_observations),
@@ -130,6 +162,8 @@ def _build_text_report(report: dict[str, Any]) -> str:
     frame_summary = report["frame_analysis"]["summary"]
     temporal = report.get("temporal_analysis", {})
     audio_analysis = report.get("audio_analysis", {})
+    visual_consistency = report.get("visual_consistency_analysis", {})
+    unified = report.get("unified_evidence", {})
 
     lines = [
         "VIDEO ANALYSIS REPORT",
@@ -287,12 +321,16 @@ def _build_text_report(report: dict[str, Any]) -> str:
 
     _append_temporal_report(lines, temporal)
     _append_audio_report(lines, audio_analysis)
+    _append_visual_consistency_report(lines, visual_consistency)
+    _append_unified_evidence_report(lines, unified)
 
     lines.extend(["Observations", "------------"])
     for label, items in (
         ("Metadata facts", report["observations"]["metadata_facts"]),
         ("Missing metadata", report["observations"]["missing_metadata"]),
         ("Temporal heuristics", report["observations"]["temporal_heuristics"]),
+        ("Audio observations", report["observations"].get("audio_observations", [])),
+        ("Visual consistency observations", report["observations"].get("visual_consistency_observations", [])),
     ):
         lines.append(label)
         if not items:
@@ -532,6 +570,199 @@ def _append_audio_report(lines: list[str], audio: dict[str, Any]) -> None:
         ]
     )
     lines.extend(f"- {item}" for item in audio.get("limitations", []))
+
+
+def _append_visual_consistency_report(lines: list[str], visual: dict[str, Any]) -> None:
+    summary = visual.get("summary", {})
+    configuration = visual.get("configuration", {})
+    artifact = visual.get("artifacts", {}).get("visual_consistency_metrics_artifact") or {}
+    lines.extend(
+        [
+            "",
+            "Visual consistency analysis",
+            "---------------------------",
+            f"Status: {_format(visual.get('status'))}",
+            f"Reason code: {_format(visual.get('reason_code'))}",
+            f"Reason: {_format(visual.get('reason'))}",
+            f"Analysis FPS: {_format(configuration.get('analysis_fps'))}",
+            f"Resize max width: {_format(configuration.get('resize_max_width'))}",
+            f"Region grid: {_format(summary.get('grid_rows'))} x {_format(summary.get('grid_columns'))}",
+            f"Frames used: {_format(summary.get('frames_used'))}",
+            f"Transitions analyzed: {_format(summary.get('transitions_analyzed'))}",
+            f"Consistency records: {_format(summary.get('consistency_record_count'))}",
+            f"Motion compensation used: {_format(summary.get('motion_compensation_used'))}",
+            f"Sustained visual-consistency intervals: {_format(summary.get('sustained_interval_count'))}",
+            f"Ranked review transitions: {_format(summary.get('ranked_review_transition_count'))}",
+            f"Processing duration: {_format(summary.get('processing_duration_seconds'))} seconds",
+            "",
+            "Visual consistency metrics used",
+            "-------------------------------",
+            f"Edge method: {_format(configuration.get('edge_method'))}",
+            f"Texture method: {_format(configuration.get('texture_method'))}",
+            f"Fine-detail method: {_format(configuration.get('detail_method'))}",
+            f"Ranking basis: {_format(configuration.get('ranking', {}).get('selection_basis'))}",
+            "",
+            "Visual consistency transition summaries",
+            "---------------------------------------",
+        ]
+    )
+    summaries = visual.get("transition_summaries", [])[:10]
+    if not summaries:
+        lines.append("- None")
+    for summary_item in summaries:
+        regional = summary_item.get("regional_summary", {})
+        lines.append(
+            f"- {summary_item['transition_id']}: {_format(summary_item['start_timestamp_seconds'])} s to "
+            f"{_format(summary_item['end_timestamp_seconds'])} s, "
+            f"unstable_regions={_format(regional.get('unstable_region_count'))}, "
+            f"max_detail_residual={_format(regional.get('maximum_regional_detail_residual'))}, "
+            f"max_edge_instability={_format(regional.get('maximum_edge_instability'))}"
+        )
+    if len(visual.get("transition_summaries", [])) > len(summaries):
+        lines.append("- Additional transition summaries are available in report.json.")
+
+    lines.extend(["", "Sustained regional visual variation", "------------------------------------"])
+    intervals = visual.get("sustained_intervals", [])
+    if not intervals:
+        lines.append("- None")
+    for interval in intervals:
+        lines.append(
+            f"- {interval['interval_id']}: {_format(interval['start_timestamp_seconds'])} s to "
+            f"{_format(interval['end_timestamp_seconds'])} s, regions={interval['affected_regions']}"
+        )
+
+    lines.extend(["", "Ranked consistency review transitions", "-------------------------------------"])
+    ranked = visual.get("ranked_review_transitions", [])
+    if not ranked:
+        lines.append("- None")
+    for transition in ranked:
+        lines.append(
+            f"- Rank {transition['ranked_review_index']}: {transition['transition_id']} "
+            f"({_format(transition['start_timestamp_seconds'])} s to {_format(transition['end_timestamp_seconds'])} s)"
+        )
+        lines.append(f"  Combined percentile: {_format(transition.get('combined_percentile'))}")
+        lines.append(f"  Ranking reasons: {transition.get('ranking_reasons', [])}")
+        artifacts = transition.get("artifacts", {})
+        if artifacts:
+            lines.append("  Review artifacts:")
+            for label, record in artifacts.items():
+                lines.append(
+                    f"  - {label}: {record['path']} ({record['size_human_readable']}, SHA-256 {record['sha256']})"
+                )
+        lines.append(f"  Interpretation: {transition.get('interpretation')}")
+
+    lines.extend(
+        [
+            "",
+            "Visual consistency artifacts",
+            "----------------------------",
+            f"Visual consistency metrics JSONL: {_format(artifact.get('path'))}",
+            f"Visual consistency metrics SHA-256: {_format(artifact.get('sha256'))}",
+            f"Visual consistency metrics size: {_format(artifact.get('size_human_readable'))}",
+            f"Consistency frames directory: {_format(visual.get('artifacts', {}).get('consistency_frames_directory'))}",
+            "",
+            "Visual consistency limitations",
+            "------------------------------",
+        ]
+    )
+    lines.extend(f"- {item}" for item in visual.get("limitations", []))
+
+
+def _append_unified_evidence_report(lines: list[str], unified: dict[str, Any]) -> None:
+    summary = unified.get("summary", {})
+    artifacts = unified.get("artifacts", {})
+    lines.extend(
+        [
+            "",
+            "Unified evidence",
+            "----------------",
+            f"Status: {_format(unified.get('status'))}",
+            f"Reason code: {_format(unified.get('reason_code'))}",
+            f"Timeline basis: {_format(unified.get('timeline_configuration', {}).get('timeline_basis'))}",
+            f"Merge tolerance seconds: {_format(unified.get('timeline_configuration', {}).get('merge_tolerance_seconds'))}",
+            f"Maximum anchor event span seconds: {_format(unified.get('timeline_configuration', {}).get('maximum_anchor_event_span_seconds'))}",
+            f"Merging strategy: {_format(unified.get('timeline_configuration', {}).get('merging_strategy'))}",
+            f"Timeline events: {_format(summary.get('timeline_event_count'))}",
+            f"Anchor candidates: {_format(summary.get('anchor_candidate_count'))}",
+            f"Supporting intervals: {_format(summary.get('supporting_interval_count'))}",
+            f"Contextual intervals: {_format(summary.get('contextual_interval_count'))}",
+            f"Priority review events: {_format(summary.get('priority_review_event_count'))}",
+            f"Time-based candidates: {_format(summary.get('time_based_candidate_count'))}",
+            f"Evidence domains available: {_format(summary.get('evidence_domains_available'))}",
+            f"Evidence groups available: {_format(summary.get('evidence_groups_available'))}",
+            f"External model results: {_format(summary.get('external_model_result_count'))}",
+            "",
+            "Priority review events",
+            "----------------------",
+        ]
+    )
+    highlights = unified.get("review_highlights", [])
+    if not highlights:
+        lines.append("- None")
+    for highlight in highlights:
+        context = highlight.get("cross_modal_context", {})
+        lines.append(
+            f"- {highlight['event_id']}: {_format(highlight['start_timestamp_seconds'])} s to "
+            f"{_format(highlight['end_timestamp_seconds'])} s, priority={highlight['review_priority']['level']}, "
+            f"context={_format(context.get('classification'))}"
+        )
+        lines.append(f"  Domains: {highlight.get('evidence_domains', [])}")
+        lines.append(f"  Evidence groups: {highlight.get('evidence_groups_present', [])}")
+        lines.append(f"  Basis: {highlight.get('review_priority', {}).get('basis', [])}")
+        boundary = highlight.get("boundary_basis", {})
+        lines.append(f"  Anchor candidates: {boundary.get('anchor_candidate_ids', [])}")
+        lines.append(f"  Supporting candidates: {boundary.get('supporting_candidate_ids', [])}")
+        lines.append(f"  Context candidates: {highlight.get('context_candidate_ids', [])}")
+        lines.append(f"  Observation IDs: {highlight.get('source_observation_ids', [])}")
+        findings = highlight.get("key_findings", [])
+        if findings:
+            lines.append("  Key findings:")
+            for finding in findings:
+                lines.append(
+                    f"  - {finding.get('domain')}/{finding.get('type')}: {finding.get('summary')}"
+                )
+
+    lines.extend(["", "Ambiguous findings", "------------------"])
+    ambiguous = unified.get("ambiguous_findings", [])
+    if not ambiguous:
+        lines.append("- None")
+    for item in ambiguous:
+        lines.append(f"- {item.get('type')}: {item.get('description')}")
+
+    lines.extend(["", "Normal or non-supporting findings", "---------------------------------"])
+    normal = unified.get("normal_or_non_supporting_findings", [])
+    if not normal:
+        lines.append("- None")
+    for item in normal:
+        lines.append(f"- {item.get('type')}: {item.get('description')}")
+
+    lines.extend(["", "Missing evidence", "----------------"])
+    missing = unified.get("missing_evidence", [])
+    if not missing:
+        lines.append("- None")
+    for item in missing:
+        lines.append(
+            f"- {item.get('type')}: status={item.get('status')}, importance={item.get('importance')}"
+        )
+
+    def artifact_line(label: str, key: str) -> str:
+        artifact = artifacts.get(key) or {}
+        return (
+            f"{label}: {_format(artifact.get('path'))} "
+            f"({_format(artifact.get('size_human_readable'))}, SHA-256 {_format(artifact.get('sha256'))})"
+        )
+
+    lines.extend(
+        [
+            "",
+            "Unified evidence artifacts",
+            "--------------------------",
+            artifact_line("Unified evidence JSON", "unified_evidence"),
+            artifact_line("Evidence timeline JSONL", "evidence_timeline"),
+            artifact_line("AI-ready input JSON", "ai_interpretation_input"),
+            artifact_line("AI prompt template", "ai_interpretation_prompt"),
+        ]
+    )
 
 
 def _legacy_evidence_from_observations(

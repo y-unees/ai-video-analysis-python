@@ -53,6 +53,9 @@ report_validator.py     Internal report consistency checks
 config.py               Version and heuristic configuration constants
 temporal/               v0.4 sequential temporal-analysis modules
 audio/                  v0.5 lightweight audio-signal analysis modules
+visual_consistency/     v0.6 regional visual-consistency analysis modules
+unified_evidence/       v0.7 unified evidence timeline and AI-ready bundle
+schemas/                Future AI interpretation response contract
 tests/                  Lightweight synthetic/unit tests
 ```
 
@@ -68,9 +71,15 @@ reports/
     ├── ffprobe_raw.json
     ├── temporal_metrics.jsonl
     ├── audio_metrics.jsonl
+    ├── visual_consistency_metrics.jsonl
+    ├── unified_evidence.json
+    ├── evidence_timeline.jsonl
+    ├── ai_interpretation_input.json
+    ├── ai_interpretation_prompt.txt
     ├── frames/
     ├── transition_frames/
-    └── scene_frames/
+    ├── scene_frames/
+    └── consistency_frames/
 ```
 
 The source video is not moved, renamed, edited, or deleted.
@@ -96,12 +105,60 @@ Paths in reports are relative to the report directory or project directory unles
 - Extracts the selected audio stream with FFmpeg into temporary PCM WAV for local analysis.
 - Calculates lightweight audio-signal metrics, silence-like intervals, clipping-like samples, and ranked energy transitions.
 - Writes full windowed audio metrics to `audio_metrics.jsonl` and hashes the artifact.
+- Runs explainable visual consistency analysis on the reused temporal frame stream.
+- Divides each analyzed frame into a deterministic 4 x 4 region grid with stable region IDs.
+- Measures local brightness flicker, motion-aware edge stability, texture stability, and fine-detail persistence.
+- Records region-level transition metrics to `visual_consistency_metrics.jsonl` and hashes the artifact.
+- Builds transition-level regional summaries, sustained regional-variation intervals, and ranked review transitions.
+- Saves bounded review overlays and heatmaps in `consistency_frames/`.
+- Builds a unified evidence timeline from metadata, frame sampling, temporal, audio, and visual-consistency observations.
+- Merges overlapping or nearby time-based evidence with a documented tolerance.
+- Records cross-modal context and review priority without producing authenticity, manipulation, or AI-generation scores.
+- Writes `unified_evidence.json`, `evidence_timeline.jsonl`, `ai_interpretation_input.json`, and `ai_interpretation_prompt.txt`.
+- Defines a future AI response contract in `schemas/ai_interpretation_response.schema.json`.
 
 ## Schema Notes
 
-Current schema: `0.5`.
+Current schema: `0.7`.
 
-Application version: `0.5.1`.
+Application version: `0.7.1`.
+
+Important fixes in `0.7.1`:
+
+- Replaces chained interval merging with anchor-based, non-transitive timeline segmentation.
+- Adds evidence candidate roles: `anchor_event`, `supporting_interval`, and `contextual_interval`.
+- Prevents long supporting or contextual intervals from bridging unrelated anchor events.
+- Keeps contextual intervals separate from localized review-event boundaries.
+- Adds regional context grouping with minimum overlap requirements.
+- Preserves canonical observation IDs where matching observations exist.
+- Balances AI-ready event findings by evidence domain so repeated regional findings do not dominate.
+- Keeps unavailable provenance only under missing evidence.
+- Keeps v0.7.1 local-only: no Gemini call, no external model, no AI probability, and no authenticity verdict.
+
+Important additions in `0.7`:
+
+- Adds `unified_evidence` with domain-separated evidence from metadata, frame sampling, temporal, audio, and visual-consistency stages.
+- Adds a chronological evidence timeline with deterministic interval merging.
+- Adds evidence-domain grouping so related visual methods are not counted as fully independent confirmations.
+- Adds cross-modal context such as visual-only, audio-only, multiple visual methods, and visual/audio overlap.
+- Adds review priority levels (`low`, `moderate`, `high`) as a human review ordering aid only.
+- Adds grouped regional visual-consistency intervals for timeline-level review while preserving original region records.
+- Adds compact AI-ready interpretation input with token-aware limits and strict interpretation constraints.
+- Adds a model-neutral prompt template for a future interpreter.
+- Adds a future response schema requiring nullable numeric probability and restricted assessment labels.
+- Does not call Gemini or any other external model, does not require an API key, and does not produce an AI probability or authenticity verdict.
+
+Important additions in `0.6`:
+
+- Adds `visual_consistency_analysis` with regional brightness, edge, texture, detail-persistence, and motion-context measurements.
+- Adds deterministic 4 x 4 region-grid records with normalized and pixel bounds.
+- Adds motion-compensated edge and detail comparisons using the existing temporal frame stream and optical-flow approach.
+- Adds `visual_consistency_metrics.jsonl` with one region record per temporal transition and hashes the artifact.
+- Adds transition-level visual consistency summaries and sustained regional visual-variation intervals.
+- Adds ranked visual consistency review transitions using relative-within-video percentile ranking.
+- Adds `consistency_frames/` review artifacts: before grid, after grid, detail residual heatmap, and combined heatmap.
+- Extends JSON/TXT reports and validation for visual-consistency structure, artifacts, rankings, intervals, and non-conclusive observations.
+- Maintains local-only operation and does not add an AI classifier, authenticity verdict, manipulation verdict, fake/real verdict, face analysis, cloud API, database, or frontend.
 
 Important fixes in `0.5.1`:
 
@@ -139,6 +196,33 @@ Important additions in `0.4`:
 - Adds `temporal_metrics.jsonl` for complete transition records.
 - Adds scene-aware representative frames.
 
+## Changelog
+
+### v0.7.1
+
+- Fixed unified timeline over-merging where long regional/context intervals could collapse many findings into one full-video event.
+- Added anchor-based event boundaries, supporting/context candidate references, and contextual interval separation.
+- Added canonical observation traceability in unified events and AI-ready input.
+- Added domain-balanced finding selection and compact high-value metrics for AI-ready event summaries.
+- Removed unavailable provenance from normal/non-supporting findings and retained it as missing evidence.
+- Added focused regression tests for bridge prevention, max-span segmentation, contextual intervals, regional grouping, observation references, and balanced AI input.
+
+### v0.7.0
+
+- Added unified evidence timeline generation and deterministic interval merging.
+- Added evidence groups, cross-modal context, review priority, ambiguous findings, non-supporting findings, and missing-evidence sections.
+- Added `unified_evidence.json`, `evidence_timeline.jsonl`, `ai_interpretation_input.json`, and `ai_interpretation_prompt.txt`.
+- Added token-aware AI input compaction and a future response schema under `schemas/`.
+- Kept v0.7 local-only with no Gemini call, no trained model, no AI probability, and no authenticity or manipulation verdict.
+
+### v0.6.0
+
+- Added explainable visual consistency analysis using the existing temporal samples.
+- Added deterministic region-grid metrics for brightness, edge stability, texture stability, fine-detail persistence, and motion context.
+- Added sustained regional visual-variation intervals, ranked review transitions, and bounded consistency review artifacts.
+- Added `visual_consistency_metrics.jsonl`, report integration, validation checks, and focused tests.
+- Kept the project local-only and non-verdict-based: no AI classifier, authenticity score, manipulation score, or fake/real conclusion.
+
 ## Metric Notes
 
 - Representative-frame sampling inspects only a small subset of frames.
@@ -154,6 +238,15 @@ Important additions in `0.4`:
 - Flow-warp residuals can increase because of scene changes, occlusion, rapid motion, motion blur, lighting changes, compression, inaccurate optical flow, zoom, camera movement, object deformation, or generated temporal inconsistency.
 - Sustained near-static intervals may be ordinary static shots, low motion, intentional freeze frames, repeated content, or normal recording behavior.
 - Audio RMS, clipping, silence-like intervals, and energy transitions are basic signal measurements only. They cannot determine whether speech is natural, cloned, synthesized, edited, or authentic.
+- Visual consistency metrics are regional measurements for review. They may be affected by camera movement, zoom, stabilization, motion blur, compression, lighting changes, focus changes, occlusion, object movement, depth changes, shadows, animation, ordinary editing, or generated instability.
+- Edge stability uses Canny edges and prefers motion-compensated comparison where possible.
+- Texture stability uses grayscale histogram distance, local variance difference, and gradient-energy difference.
+- Fine-detail persistence compares Laplacian-detail residuals after motion compensation.
+- Ranked visual consistency transitions are selected relative to the current video only. They are not anomaly scores, suspicion scores, or objective signs of manipulation.
+- Unified evidence events merge time-based findings that overlap or fall within the configured tolerance. A merged event is a review convenience, not a claim that all sources prove the same cause.
+- Evidence group counts separate broader sources such as visual, audio, metadata, provenance, and learned model. Multiple visual modules are correlated and are not treated as independent confirmations.
+- Review priority means "review this interval first." It is not an authenticity score, AI-generation probability, manipulation score, or risk score.
+- The AI-ready input is compact by design and omits raw JSONL records, raw FFprobe JSON, full region records, pixel arrays, and audio arrays.
 
 ## What It Does Not Do
 
@@ -162,14 +255,20 @@ Important additions in `0.4`:
 - No face analysis.
 - No audio authenticity analysis.
 - No synthetic-speech detector.
+- No video authenticity verdict.
+- No manipulation verdict.
+- No fake/real verdict.
 - No semantic-content analysis.
 - No Gemini integration.
+- No external model call in v0.7.1.
+- No AI probability.
+- No trained model inference.
 - No C2PA provenance analysis.
 - No API, frontend, database, cloud storage, or deployment code.
 
-All temporal flags are heuristic observations only. They may point to normal camera motion, lighting changes, compression, scene transitions, or other ordinary video behavior. They are not verdicts and are not proof of editing, deception, tampering, AI generation, or authenticity.
+All temporal, audio, and visual-consistency flags are observations only. They may point to normal camera motion, lighting changes, compression, scene transitions, object motion, or other ordinary video behavior. They are not verdicts and are not proof of editing, deception, tampering, AI generation, or authenticity.
 
-The analyzer may identify visual or audio transitions and intervals that deserve review, but v0.5.1 does not contain a trained AI-video detector, audio-authenticity detector, or direct provenance verifier.
+The analyzer may identify visual or audio transitions and intervals that deserve review, but v0.7.1 does not contain a trained AI-video detector, audio-authenticity detector, external model interpreter, or direct provenance verifier.
 
 ## 🧪 Tests
 

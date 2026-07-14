@@ -112,6 +112,10 @@ def analyze_temporal(
                 "scene_frames_directory": "scene_frames",
                 "transition_frames_directory": "transition_frames",
             },
+            "_runtime": {
+                "samples": samples,
+                "transitions": transitions,
+            },
         }
     )
     return result, warnings

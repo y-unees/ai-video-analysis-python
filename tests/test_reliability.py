@@ -150,8 +150,8 @@ class ReliabilityTests(unittest.TestCase):
                 "status": "completed",
             },
             analysis_environment={
-                "application_version": "0.5.1",
-                "report_schema_version": "0.5",
+                "application_version": "0.7.1",
+                "report_schema_version": "0.7",
             },
             source={
                 "filename": "sample.mp4",

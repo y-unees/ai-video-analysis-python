@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-APP_VERSION = "0.5.1"
-SCHEMA_VERSION = "0.5"
+APP_VERSION = "0.7.1"
+SCHEMA_VERSION = "0.7"
 
 SOURCE_DIR_NAME = "source_videos"
 REPORTS_DIR_NAME = "reports"
@@ -70,6 +70,32 @@ AUDIO_MAX_REVIEW_TRANSITIONS = 5
 AUDIO_MAX_NOTABLE_TRANSITIONS = AUDIO_MAX_REVIEW_TRANSITIONS
 AUDIO_EXTRACTION_TIMEOUT_SECONDS = 60
 
+VISUAL_CONSISTENCY_GRID_ROWS = 4
+VISUAL_CONSISTENCY_GRID_COLUMNS = 4
+VISUAL_CONSISTENCY_MINIMUM_VALID_REGION_RATIO = 0.5
+VISUAL_CONSISTENCY_MAX_RANKED_INTERVALS = 5
+VISUAL_CONSISTENCY_EDGE_CANNY_THRESHOLD1 = 80
+VISUAL_CONSISTENCY_EDGE_CANNY_THRESHOLD2 = 160
+VISUAL_CONSISTENCY_TEXTURE_HISTOGRAM_BINS = 16
+VISUAL_CONSISTENCY_HIGH_DETAIL_RESIDUAL_THRESHOLD = 0.18
+VISUAL_CONSISTENCY_STATIONARY_FLOW_THRESHOLD = 0.5
+VISUAL_CONSISTENCY_HIGH_MOTION_FLOW_THRESHOLD = 4.0
+VISUAL_CONSISTENCY_UNSTABLE_EDGE_THRESHOLD = 0.35
+VISUAL_CONSISTENCY_UNSTABLE_TEXTURE_THRESHOLD = 0.30
+VISUAL_CONSISTENCY_UNSTABLE_DETAIL_THRESHOLD = 0.16
+VISUAL_CONSISTENCY_UNSTABLE_BRIGHTNESS_THRESHOLD = 0.12
+VISUAL_CONSISTENCY_MINIMUM_INTERVAL_TRANSITIONS = 3
+VISUAL_CONSISTENCY_MINIMUM_INTERVAL_DURATION_SECONDS = 0.4
+
+EVIDENCE_MERGE_TOLERANCE_SECONDS = 0.25
+EVIDENCE_MAX_ANCHOR_EVENT_SPAN_SECONDS = 1.25
+REGIONAL_GROUP_MINIMUM_OVERLAP_RATIO = 0.5
+AI_INPUT_MAX_TIMELINE_EVENTS = 10
+AI_INPUT_MAX_FINDINGS_PER_EVENT = 8
+AI_INPUT_MAX_ARTIFACTS_PER_EVENT = 4
+AI_INPUT_MAX_GLOBAL_FINDINGS = 20
+AI_INPUT_TARGET_CHARACTER_COUNT = 60000
+
 
 def heuristic_configuration() -> dict[str, object]:
     return {
@@ -110,6 +136,8 @@ def heuristic_configuration() -> dict[str, object]:
         "histogram_bins": HISTOGRAM_BINS,
         "histogram_comparison_method": "OpenCV HISTCMP_CORREL",
         "temporal_analysis": temporal_configuration(),
+        "visual_consistency_analysis": visual_consistency_configuration(),
+        "unified_evidence": unified_evidence_configuration(),
     }
 
 
@@ -178,4 +206,93 @@ def audio_configuration() -> dict[str, object]:
         "maximum_notable_transitions": AUDIO_MAX_NOTABLE_TRANSITIONS,
         "extraction_timeout_seconds": AUDIO_EXTRACTION_TIMEOUT_SECONDS,
         "interpretation": "Starter thresholds for lightweight local signal observations, not forensic standards.",
+    }
+
+
+def visual_consistency_configuration() -> dict[str, object]:
+    return {
+        "analysis_fps": TEMPORAL_REQUESTED_ANALYSIS_FPS,
+        "resize_max_width": TEMPORAL_RESIZE_MAX_WIDTH,
+        "grid_rows": VISUAL_CONSISTENCY_GRID_ROWS,
+        "grid_columns": VISUAL_CONSISTENCY_GRID_COLUMNS,
+        "minimum_valid_region_ratio": VISUAL_CONSISTENCY_MINIMUM_VALID_REGION_RATIO,
+        "maximum_ranked_intervals": VISUAL_CONSISTENCY_MAX_RANKED_INTERVALS,
+        "edge_method": "OpenCV Canny on blurred grayscale analysis frames",
+        "edge_canny_threshold1": VISUAL_CONSISTENCY_EDGE_CANNY_THRESHOLD1,
+        "edge_canny_threshold2": VISUAL_CONSISTENCY_EDGE_CANNY_THRESHOLD2,
+        "edge_comparison": "previous edge map is warped into current-frame coordinates with backward Farneback optical flow when available",
+        "texture_method": "normalized grayscale histogram plus local variance and Sobel gradient-energy comparison",
+        "texture_histogram_bins": VISUAL_CONSISTENCY_TEXTURE_HISTOGRAM_BINS,
+        "detail_method": "absolute difference between motion-compensated previous Laplacian magnitude and current Laplacian magnitude, normalized to 0-1",
+        "motion_context": {
+            "stationary_flow_magnitude_at_or_below": VISUAL_CONSISTENCY_STATIONARY_FLOW_THRESHOLD,
+            "high_motion_mean_flow_at_or_above": VISUAL_CONSISTENCY_HIGH_MOTION_FLOW_THRESHOLD,
+        },
+        "unstable_region_rules": {
+            "edge_instability_at_or_above": VISUAL_CONSISTENCY_UNSTABLE_EDGE_THRESHOLD,
+            "texture_distance_at_or_above": VISUAL_CONSISTENCY_UNSTABLE_TEXTURE_THRESHOLD,
+            "detail_residual_at_or_above": VISUAL_CONSISTENCY_UNSTABLE_DETAIL_THRESHOLD,
+            "brightness_normalized_difference_at_or_above": VISUAL_CONSISTENCY_UNSTABLE_BRIGHTNESS_THRESHOLD,
+            "logic": "any threshold may mark a region for review",
+        },
+        "sustained_interval_rules": {
+            "minimum_consecutive_transitions": VISUAL_CONSISTENCY_MINIMUM_INTERVAL_TRANSITIONS,
+            "minimum_duration_seconds": VISUAL_CONSISTENCY_MINIMUM_INTERVAL_DURATION_SECONDS,
+            "overlap_behavior": "runs are detected per region, then simultaneous affected regions are summarized without claiming causation",
+        },
+        "ranking": {
+            "selection_basis": "relative_within_video",
+            "absolute_significance_assessed": False,
+            "combined_percentile_metric_count": 7,
+            "metrics": [
+                "maximum regional detail residual descending",
+                "average regional detail residual descending",
+                "maximum edge instability descending",
+                "average edge instability descending",
+                "maximum texture distance descending",
+                "unstable-region count descending",
+                "regional brightness-change concentration descending",
+            ],
+        },
+    }
+
+
+def unified_evidence_configuration() -> dict[str, object]:
+    return {
+        "merge_tolerance_seconds": EVIDENCE_MERGE_TOLERANCE_SECONDS,
+        "maximum_anchor_event_span_seconds": EVIDENCE_MAX_ANCHOR_EVENT_SPAN_SECONDS,
+        "merging_strategy": "anchor_based_non_transitive",
+        "maximum_anchor_event_span_purpose": "Timeline segmentation control only; not a forensic threshold.",
+        "regional_group_minimum_overlap_ratio": REGIONAL_GROUP_MINIMUM_OVERLAP_RATIO,
+        "timeline_basis": "selected_video_stream_normalized",
+        "review_priority_levels": ["low", "moderate", "high"],
+        "review_priority_rules": {
+            "high": [
+                "two_or_more_independent_evidence_groups",
+                "visual_and_audio_temporal_overlap",
+                "multiple_visual_methods_with_ranked_source_findings",
+            ],
+            "moderate": [
+                "ranked_source_findings",
+                "multiple_observations",
+                "review_artifacts_available",
+            ],
+            "low": [
+                "single_source_or_global_context_only",
+            ],
+            "meaning": "Review priority only; it is not an authenticity score, AI probability, or manipulation verdict.",
+        },
+        "ai_input_limits": {
+            "maximum_timeline_events": AI_INPUT_MAX_TIMELINE_EVENTS,
+            "maximum_findings_per_event": AI_INPUT_MAX_FINDINGS_PER_EVENT,
+            "domain_finding_caps": {
+                "visual_consistency": 3,
+                "visual_temporal": 3,
+                "audio_signal": 2,
+                "frame_sampling": 1,
+            },
+            "maximum_artifacts_per_event": AI_INPUT_MAX_ARTIFACTS_PER_EVENT,
+            "maximum_global_findings": AI_INPUT_MAX_GLOBAL_FINDINGS,
+            "target_character_count": AI_INPUT_TARGET_CHARACTER_COUNT,
+        },
     }
