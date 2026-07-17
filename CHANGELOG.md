@@ -11,6 +11,7 @@
 - Added D3 method-verification, score-direction, and reproducibility metadata.
 - Kept D3 output standalone from unified evidence and AI-ready inputs.
 - Tightened validator checks for null probability, null threshold, `not_assigned` classification, and no confidence/verdict fields.
+- Fixed completed D3 artifact execution reporting in `d3_detector_result.json`.
 - Documented pinned upstream parity status in `docs/D3_UPSTREAM_PARITY.md`.
 - Kept actual pretrained inference marked unverified when optional ML dependencies/assets are absent.
 

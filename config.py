@@ -1,4 +1,10 @@
 from __future__ import annotations
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+load_dotenv(PROJECT_ROOT / ".env")
 
 APP_VERSION = "0.8.1"
 SCHEMA_VERSION = "0.7"

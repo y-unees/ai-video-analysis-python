@@ -131,6 +131,8 @@ Current schema: `0.7`.
 
 Application version: `0.8.1`.
 
+v0.8 stable status: the optional D3 learned-detector line is stable for standalone local raw-feature reporting, with learned outputs still kept separate from unified evidence and AI-ready inputs.
+
 Important fixes in `0.8.1`:
 
 - Adds D3 upstream parity documentation against pinned commit `c798fbc57fe0c4198d63a73732c2c0f9e4b4816c`.
@@ -140,6 +142,7 @@ Important fixes in `0.8.1`:
 - Centralizes D3 encoder mappings and learned-detector status/reason-code semantics.
 - Tightens validation for null probability, null threshold, `not_assigned` classification, and no confidence/verdict fields.
 - Keeps D3 score direction neutral because upstream label/AP handling does not support a clean synthetic/real direction claim.
+- Fixes `d3_detector_result.json` execution reporting so completed D3 artifact files record `status: completed`, `completed_at_utc`, and `duration_seconds`.
 
 Important additions in `0.8.0`:
 
@@ -230,6 +233,7 @@ Important additions in `0.4`:
 ### v0.8.1
 
 - Hardened D3 integration with timeout, temporary-frame, status, reason-code, and validator updates.
+- Fixed completed D3 artifact status reporting in `d3_detector_result.json`.
 - Added `docs/D3_UPSTREAM_PARITY.md`, `CHANGELOG.md`, and `THIRD_PARTY_NOTICES.md`.
 - Added deterministic D3 math, timeout, status, and safe-output regression tests.
 - Preserved local-only default behavior and no D3 fusion with unified evidence or AI-ready input.

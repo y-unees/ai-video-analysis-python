@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import math
+import json
+import tempfile
 import time
 import unittest
+from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -139,6 +143,25 @@ class D3TimeoutAndValidationTests(unittest.TestCase):
         self.assertEqual(native["classification"], "not_assigned")
         self.assertEqual(native["calibration_status"], "uncalibrated")
         self.assertIsNone(native["raw_score"])
+
+    def test_completed_artifact_records_completed_execution(self) -> None:
+        detector = D3Detector(_config(timeout_seconds=300), learned_detectors_enabled=True)
+        result = detector._base_result(  # noqa: SLF001 - focused artifact regression test.
+            datetime.now(timezone.utc),
+            Path("source_videos/sample.mp4"),
+            "abc",
+            {"container": {"duration_seconds": 1.0}},
+        )
+        result["preprocessing"] = {"selected_frame_timestamps_seconds": [0.0, 0.1, 0.2]}
+        result["execution"]["status"] = "completed"
+        result["execution"]["message"] = "D3 completed."
+        detector._finish(result, time.perf_counter())  # noqa: SLF001 - focused artifact regression test.
+        with tempfile.TemporaryDirectory() as directory:
+            detector._write_artifacts(Path(directory), result, [1.0, 2.0], [1.0])  # noqa: SLF001
+            artifact = json.loads((Path(directory) / "d3_detector_result.json").read_text(encoding="utf-8"))
+        self.assertEqual(artifact["execution"]["status"], "completed")
+        self.assertIsNotNone(artifact["execution"]["completed_at_utc"])
+        self.assertIsNotNone(artifact["execution"]["duration_seconds"])
 
     def test_validator_rejects_non_completed_raw_score_and_confidence(self) -> None:
         report = {

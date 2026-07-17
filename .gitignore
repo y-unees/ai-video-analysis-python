@@ -12,3 +12,4 @@ d3_model_cache/
 model_cache/
 learned_detector_temp/
 d3_temporary_frames/
+.model_cache/

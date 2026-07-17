@@ -204,15 +204,15 @@ class D3Detector:
                 "first_order_value_count": len(first_order),
                 **summary,
             }
+            base["execution"]["status"] = "completed"
+            base["execution"]["message"] = "D3 completed. The raw score is uncalibrated and no classification threshold was applied."
+            self._populate_runtime_versions(base)
+            self._finish(base, start_perf)
             try:
                 artifacts = self._write_artifacts(output_directory, base, first_order, second_order)
             except Exception as error:
                 raise RuntimeError(f"artifact_generation_failure: {_sanitize(str(error))}") from error
             base["artifacts"] = artifacts
-            base["execution"]["status"] = "completed"
-            base["execution"]["message"] = "D3 completed. The raw score is uncalibrated and no classification threshold was applied."
-            self._populate_runtime_versions(base)
-            self._finish(base, start_perf)
             return base
         except Exception as error:
             text = str(error)
