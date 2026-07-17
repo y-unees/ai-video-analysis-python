@@ -7,6 +7,7 @@ Terminal-only, local-first video-analysis MVP for metadata inspection, represent
 - Python 3.10 or newer
 - FFmpeg with both `ffmpeg` and `ffprobe` available in your system PATH
 - Python packages from `requirements.txt` for OpenCV/Pillow/ImageHash/NumPy-based local analysis
+- Optional D3 learned-detector packages from `requirements-d3.txt` only when D3 inference is enabled
 
 If FFmpeg is installed inside a virtual environment or local tool directory, activate that environment before running `python main.py` so the app can find `ffmpeg` and `ffprobe`.
 
@@ -55,6 +56,8 @@ temporal/               v0.4 sequential temporal-analysis modules
 audio/                  v0.5 lightweight audio-signal analysis modules
 visual_consistency/     v0.6 regional visual-consistency analysis modules
 unified_evidence/       v0.7 unified evidence timeline and AI-ready bundle
+learned_detectors/      v0.8 optional learned-detector adapters
+docs/                   Integration notes and optional detector documentation
 schemas/                Future AI interpretation response contract
 tests/                  Lightweight synthetic/unit tests
 ```
@@ -76,6 +79,8 @@ reports/
     ├── evidence_timeline.jsonl
     ├── ai_interpretation_input.json
     ├── ai_interpretation_prompt.txt
+    ├── d3_detector_result.json        # only when D3 completes
+    ├── d3_temporal_features.jsonl     # only when D3 completes
     ├── frames/
     ├── transition_frames/
     ├── scene_frames/
@@ -116,12 +121,36 @@ Paths in reports are relative to the report directory or project directory unles
 - Records cross-modal context and review priority without producing authenticity, manipulation, or AI-generation scores.
 - Writes `unified_evidence.json`, `evidence_timeline.jsonl`, `ai_interpretation_input.json`, and `ai_interpretation_prompt.txt`.
 - Defines a future AI response contract in `schemas/ai_interpretation_response.schema.json`.
+- Adds an optional modular learned-detector layer under `learned_detector_results`.
+- Integrates D3 as an optional local adapter when explicitly enabled and optional dependencies are installed.
+- Records D3 availability, configuration, preprocessing trace, raw second-order temporal-feature statistic, and artifacts without fusing it into unified evidence.
 
 ## Schema Notes
 
 Current schema: `0.7`.
 
-Application version: `0.7.1`.
+Application version: `0.8.1`.
+
+Important fixes in `0.8.1`:
+
+- Adds D3 upstream parity documentation against pinned commit `c798fbc57fe0c4198d63a73732c2c0f9e4b4816c`.
+- Clarifies that the local D3 layer is a documented single-video adaptation, not proven full upstream runtime parity.
+- Adds process-based timeout enforcement for the heavy D3 path.
+- Adds temporary-frame preservation controls for D3 diagnostics.
+- Centralizes D3 encoder mappings and learned-detector status/reason-code semantics.
+- Tightens validation for null probability, null threshold, `not_assigned` classification, and no confidence/verdict fields.
+- Keeps D3 score direction neutral because upstream label/AP handling does not support a clean synthetic/real direction claim.
+
+Important additions in `0.8.0`:
+
+- Adds the `learned_detectors/` package with a modular adapter interface.
+- Adds optional D3 integration pinned to upstream commit `c798fbc57fe0c4198d63a73732c2c0f9e4b4816c`.
+- Keeps learned detectors disabled by default through `LEARNED_DETECTORS_ENABLED=false` and `D3_ENABLED=false`.
+- Adds documented single-video D3 preprocessing adaptation, first/second-order feature tracing, report rendering, and validation.
+- Writes `d3_detector_result.json` and `d3_temporal_features.jsonl` only for completed D3 runs.
+- Keeps D3 standalone from unified evidence in v0.8.
+- Reports D3 raw score as uncalibrated: no probability, threshold, classification, authenticity verdict, or manipulation verdict.
+- Adds `requirements-d3.txt`, `.env.example`, `docs/D3_INTEGRATION.md`, and `docs/LEARNED_DETECTORS.md`.
 
 Important fixes in `0.7.1`:
 
@@ -198,6 +227,21 @@ Important additions in `0.4`:
 
 ## Changelog
 
+### v0.8.1
+
+- Hardened D3 integration with timeout, temporary-frame, status, reason-code, and validator updates.
+- Added `docs/D3_UPSTREAM_PARITY.md`, `CHANGELOG.md`, and `THIRD_PARTY_NOTICES.md`.
+- Added deterministic D3 math, timeout, status, and safe-output regression tests.
+- Preserved local-only default behavior and no D3 fusion with unified evidence or AI-ready input.
+
+### v0.8.0
+
+- Added optional learned-detector infrastructure and D3 adapter.
+- Added D3 availability checks for disabled, unavailable, skipped, failed, timed-out, and completed states.
+- Added D3 raw output and temporal feature artifacts with report validation.
+- Added focused tests for D3 availability, preprocessing, and second-order feature math.
+- Kept the default pipeline local heuristic-only and kept learned outputs unfused from unified evidence.
+
 ### v0.7.1
 
 - Fixed unified timeline over-merging where long regional/context intervals could collapse many findings into one full-video event.
@@ -247,6 +291,7 @@ Important additions in `0.4`:
 - Evidence group counts separate broader sources such as visual, audio, metadata, provenance, and learned model. Multiple visual modules are correlated and are not treated as independent confirmations.
 - Review priority means "review this interval first." It is not an authenticity score, AI-generation probability, manipulation score, or risk score.
 - The AI-ready input is compact by design and omits raw JSONL records, raw FFprobe JSON, full region records, pixel arrays, and audio arrays.
+- D3, when enabled, exports a raw second-order temporal-feature statistic. This value is uncalibrated in this project and must not be interpreted as probability or verdict.
 
 ## What It Does Not Do
 
@@ -260,15 +305,15 @@ Important additions in `0.4`:
 - No fake/real verdict.
 - No semantic-content analysis.
 - No Gemini integration.
-- No external model call in v0.7.1.
+- No external model call by default.
 - No AI probability.
-- No trained model inference.
+- No trained model inference unless optional D3 is explicitly enabled and dependencies/model assets are available.
 - No C2PA provenance analysis.
 - No API, frontend, database, cloud storage, or deployment code.
 
 All temporal, audio, and visual-consistency flags are observations only. They may point to normal camera motion, lighting changes, compression, scene transitions, object motion, or other ordinary video behavior. They are not verdicts and are not proof of editing, deception, tampering, AI generation, or authenticity.
 
-The analyzer may identify visual or audio transitions and intervals that deserve review, but v0.7.1 does not contain a trained AI-video detector, audio-authenticity detector, external model interpreter, or direct provenance verifier.
+The analyzer may identify visual or audio transitions and intervals that deserve review. v0.8 can optionally run D3 as a standalone learned detector, but it does not contain an audio-authenticity detector, external model interpreter, direct provenance verifier, or calibrated authenticity decision layer.
 
 ## 🧪 Tests
 

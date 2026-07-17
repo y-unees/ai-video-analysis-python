@@ -1,0 +1,6 @@
+# Optional D3 learned-detector dependencies.
+# Install only when you want to run learned-detector inference.
+torch==2.8.0
+torchvision==0.23.0
+transformers==4.57.0
+timm==1.0.20

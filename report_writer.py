@@ -132,6 +132,12 @@ def build_report(
             "validation": {"errors": [], "warnings": []},
             "limitations": [],
         },
+        "learned_detector_results": {
+            "status": "not_run",
+            "d3": {},
+            "standalone_not_fused_with_unified_evidence": True,
+            "limitations": [],
+        },
         "heuristic_configuration": heuristic_configuration(),
         "observations": final_observations,
         "evidence": _legacy_evidence_from_observations(final_observations),
@@ -164,6 +170,7 @@ def _build_text_report(report: dict[str, Any]) -> str:
     audio_analysis = report.get("audio_analysis", {})
     visual_consistency = report.get("visual_consistency_analysis", {})
     unified = report.get("unified_evidence", {})
+    learned = report.get("learned_detector_results", {})
 
     lines = [
         "VIDEO ANALYSIS REPORT",
@@ -323,6 +330,7 @@ def _build_text_report(report: dict[str, Any]) -> str:
     _append_audio_report(lines, audio_analysis)
     _append_visual_consistency_report(lines, visual_consistency)
     _append_unified_evidence_report(lines, unified)
+    _append_learned_detector_report(lines, learned)
 
     lines.extend(["Observations", "------------"])
     for label, items in (
@@ -763,6 +771,69 @@ def _append_unified_evidence_report(lines: list[str], unified: dict[str, Any]) -
             artifact_line("AI prompt template", "ai_interpretation_prompt"),
         ]
     )
+
+
+def _append_learned_detector_report(lines: list[str], learned: dict[str, Any]) -> None:
+    d3 = learned.get("d3", {})
+    execution = d3.get("execution", {})
+    detector = d3.get("detector", {})
+    configuration = d3.get("configuration", {})
+    preprocessing = d3.get("preprocessing", {})
+    native = d3.get("native_output", {})
+    summary = d3.get("feature_summary", {})
+    artifacts = d3.get("artifacts", {})
+    verification = d3.get("method_verification", {})
+    lines.extend(
+        [
+            "",
+            "LEARNED DETECTOR - D3",
+            "---------------------",
+            f"Execution status: {_format(execution.get('status'))}",
+            f"Reason code: {_format(execution.get('reason_code'))}",
+            f"Standalone from unified evidence: {_format(learned.get('standalone_not_fused_with_unified_evidence'))}",
+            f"Method: {_format(detector.get('detector_name'))}",
+            f"Upstream commit: {_format(detector.get('upstream_commit'))}",
+            f"Upstream license: {_format(detector.get('upstream_license'))}",
+            f"Encoder: {_format(configuration.get('encoder'))}",
+            f"Distance mode: {_format(configuration.get('distance_mode'))}",
+            f"Device requested: {_format(execution.get('device_requested'))}",
+            f"Device used: {_format(execution.get('device_used'))}",
+            f"Timeout seconds: {_format(execution.get('timeout_seconds'))}",
+            f"Preprocessing window: {_format(preprocessing.get('window_start_seconds'))} s to {_format(preprocessing.get('window_end_seconds'))} s",
+            f"Selected frame count: {_format(preprocessing.get('actual_selected_frame_count'))}",
+            f"Temporary frames preserved: {_format(preprocessing.get('temporary_frames', {}).get('preserved'))}",
+            f"Raw score: {_format(native.get('raw_score'))}",
+            f"Score name: {_format(native.get('score_name'))}",
+            f"Score direction: {_format(native.get('score_direction'))}",
+            f"Probability: {_format(native.get('probability'))}",
+            f"Calibration: {_format(native.get('calibration_status'))}",
+            f"Classification: {_format(native.get('classification'))}",
+            f"First-order count: {_format(summary.get('first_order_value_count'))}",
+            f"Second-order count: {_format(summary.get('second_order_value_count'))}",
+            f"Second-order mean: {_format(summary.get('second_order_mean'))}",
+            f"Second-order standard deviation: {_format(summary.get('second_order_standard_deviation'))}",
+            f"Preprocessing parity: {_format(verification.get('preprocessing_parity'))}",
+            f"Mathematical parity: {_format(verification.get('mathematical_parity'))}",
+            f"Runtime parity: {_format(verification.get('runtime_parity'))}",
+            f"Score-direction verification: {_format(verification.get('score_direction_status'))}",
+            "This raw D3 value is an uncalibrated second-order temporal-feature statistic. It is not an authenticity probability and no classification threshold has been applied.",
+            "",
+            "D3 artifacts",
+            "------------",
+        ]
+    )
+    if not artifacts:
+        lines.append("- None")
+    for label, artifact in artifacts.items():
+        lines.append(
+            f"- {label}: {artifact.get('path')} ({artifact.get('size_human_readable')}, SHA-256 {artifact.get('sha256')})"
+        )
+    lines.extend(["", "D3 limitations", "--------------"])
+    limitations = d3.get("limitations") or learned.get("limitations", [])
+    if not limitations:
+        lines.append("- None")
+    for limitation in limitations:
+        lines.append(f"- {limitation}")
 
 
 def _legacy_evidence_from_observations(

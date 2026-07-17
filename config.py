@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-APP_VERSION = "0.7.1"
+APP_VERSION = "0.8.1"
 SCHEMA_VERSION = "0.7"
 
 SOURCE_DIR_NAME = "source_videos"
@@ -296,3 +296,46 @@ def unified_evidence_configuration() -> dict[str, object]:
             "target_character_count": AI_INPUT_TARGET_CHARACTER_COUNT,
         },
     }
+
+
+def learned_detector_configuration() -> dict[str, object]:
+    import os
+
+    return {
+        "learned_detectors_enabled": _env_bool("LEARNED_DETECTORS_ENABLED", False),
+        "d3": {
+            "enabled": _env_bool("D3_ENABLED", False),
+            "device": os.getenv("D3_DEVICE", "auto"),
+            "encoder": os.getenv("D3_ENCODER", "XCLIP-16"),
+            "distance_mode": os.getenv("D3_DISTANCE", "l2"),
+            "random_seed": _env_int("D3_RANDOM_SEED", 42),
+            "timeout_seconds": _env_positive_int("D3_TIMEOUT_SECONDS", 300),
+            "allow_model_download": _env_bool("D3_ALLOW_MODEL_DOWNLOAD", False),
+            "model_cache_directory": os.getenv("D3_MODEL_CACHE_DIRECTORY", ""),
+            "preprocessing_mode": os.getenv("D3_PREPROCESSING_MODE", "upstream_compatible"),
+            "preserve_temporary_frames": _env_bool("D3_PRESERVE_TEMPORARY_FRAMES", False),
+        },
+    }
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    import os
+
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    import os
+
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
+def _env_positive_int(name: str, default: int) -> int:
+    value = _env_int(name, default)
+    return value if value > 0 else default

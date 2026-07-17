@@ -13,6 +13,7 @@ from evidence_builder import build_temporal_evidence
 from file_utils import calculate_sha256, get_file_evidence
 from frame_analyzer import summarize_frame_analysis
 from frame_sampler import sample_video_frames
+from learned_detectors import run_learned_detectors
 from metadata_extractor import FFprobeError, extract_metadata
 from report_writer import (
     build_report,
@@ -259,6 +260,27 @@ def main() -> int:
         report["unified_evidence"] = unified_evidence
         if unified_evidence.get("status") != "completed" and report["analysis"]["status"] == "completed":
             report["analysis"]["status"] = "completed_with_warnings"
+
+        print("Optional D3 learned detector stage...")
+        learned_detector_results, learned_warnings = run_learned_detectors(
+            video_path=selected_video,
+            video_sha256=file_evidence["sha256"],
+            analysis_dir=analysis_dir,
+            metadata=metadata,
+        )
+        warnings.extend(learned_warnings)
+        report["warnings"] = warnings
+        report["learned_detector_results"] = learned_detector_results
+        d3_status = learned_detector_results.get("d3", {}).get("execution", {}).get("status")
+        if d3_status == "completed":
+            d3_output = learned_detector_results["d3"].get("native_output", {})
+            print(
+                "D3 learned detector: completed standalone raw-score analysis "
+                f"(raw score: {d3_output.get('raw_score')}, classification: not assigned)"
+            )
+        else:
+            reason = learned_detector_results.get("d3", {}).get("execution", {}).get("reason_code")
+            print(f"D3 learned detector: {d3_status} ({reason})")
 
         print("Creating reports...")
         report_paths = write_reports(analysis_dir=analysis_dir, report=report)

@@ -8,6 +8,11 @@ from typing import Any
 from config import APP_VERSION, SCHEMA_VERSION
 from file_utils import calculate_sha256
 from frame_analyzer import summarize_frame_analysis
+from learned_detectors.base import ALLOWED_STATUSES
+from learned_detectors.d3.configuration import SUPPORTED_ENCODERS, SUPPORTED_DISTANCES
+
+
+LEARNED_DETECTOR_STATUSES = ALLOWED_STATUSES
 
 
 def validate_report(report: dict[str, Any], base_dir: Path | None = None) -> dict[str, list[str]]:
@@ -70,6 +75,7 @@ def validate_report(report: dict[str, Any], base_dir: Path | None = None) -> dic
     _check_audio_analysis(report.get("audio_analysis", {}), errors, warnings, base_dir)
     _check_visual_consistency_analysis(report.get("visual_consistency_analysis", {}), errors, warnings, base_dir)
     _check_unified_evidence(report.get("unified_evidence", {}), errors, warnings, base_dir)
+    _check_learned_detector_results(report.get("learned_detector_results", {}), report, errors, warnings, base_dir)
     _check_observation_scopes(report.get("observations", {}), errors)
     _check_evidence_compatibility(report, errors)
 
@@ -330,6 +336,112 @@ def _check_unified_evidence(
     validation = unified.get("validation", {})
     if validation.get("errors"):
         errors.extend(f"Unified evidence validation: {error}" for error in validation["errors"])
+
+
+def _check_learned_detector_results(
+    learned: dict[str, Any],
+    report: dict[str, Any],
+    errors: list[str],
+    warnings: list[str],
+    base_dir: Path | None,
+) -> None:
+    if not learned:
+        errors.append("Learned detector results section is missing.")
+        return
+    if learned.get("standalone_not_fused_with_unified_evidence") is not True:
+        errors.append("Learned detector results must remain standalone from unified evidence in v0.8.")
+    d3 = learned.get("d3")
+    if not isinstance(d3, dict) or not d3:
+        if learned.get("status") not in {"not_run", "disabled"}:
+            errors.append("Learned detector results are missing the D3 section.")
+        return
+
+    execution = d3.get("execution", {})
+    status = execution.get("status")
+    if status not in LEARNED_DETECTOR_STATUSES:
+        errors.append("D3 execution has an invalid status.")
+    if status in {"disabled", "unavailable", "skipped", "failed", "timed_out"} and not execution.get("reason_code"):
+        errors.append("D3 non-completed execution is missing a reason code.")
+    detector = d3.get("detector", {})
+    if detector.get("detector_id") != "d3":
+        errors.append("D3 detector ID is missing or invalid.")
+    configuration = d3.get("configuration", {})
+    if configuration.get("encoder") not in SUPPORTED_ENCODERS:
+        errors.append("D3 encoder is missing or unsupported.")
+    if configuration.get("distance_mode") not in SUPPORTED_DISTANCES:
+        errors.append("D3 distance mode is missing or unsupported.")
+
+    native = d3.get("native_output", {})
+    for key in ("probability", "threshold", "classification", "calibration_status"):
+        if key not in native:
+            errors.append(f"D3 native output is missing explicit safe field: {key}.")
+    if native.get("probability") is not None:
+        errors.append("D3 probability must be explicitly null.")
+    if native.get("threshold") is not None:
+        errors.append("D3 threshold must be explicitly null.")
+    if native.get("classification") != "not_assigned":
+        errors.append("D3 native output must not assign a classification.")
+    if native.get("calibration_status") != "uncalibrated":
+        errors.append("D3 native output must be marked uncalibrated.")
+    _check_no_d3_verdict_or_confidence_fields(d3, errors)
+
+    source_sha = report.get("source", {}).get("sha256")
+    if d3.get("input", {}).get("video_sha256") not in {None, source_sha}:
+        errors.append("D3 input SHA-256 does not match the source video SHA-256.")
+    relative_video_path = d3.get("input", {}).get("relative_video_path")
+    if relative_video_path and _is_absolute_path(str(relative_video_path)):
+        errors.append("D3 input video path must be relative.")
+
+    artifacts = d3.get("artifacts", {})
+    for artifact in artifacts.values():
+        if isinstance(artifact, dict):
+            _check_artifact(artifact, base_dir, errors, warnings)
+
+    if status != "completed":
+        if native.get("raw_score") is not None:
+            errors.append("Non-completed D3 result must not contain a raw score.")
+        return
+    raw_score = native.get("raw_score")
+    if raw_score is None or not _finite_or_none(raw_score):
+        errors.append("Completed D3 result is missing a finite raw score.")
+    preprocessing = d3.get("preprocessing", {})
+    frame_count = preprocessing.get("actual_selected_frame_count")
+    summary = d3.get("feature_summary", {})
+    if not isinstance(frame_count, int) or frame_count < 8:
+        errors.append("Completed D3 result has an invalid selected frame count.")
+    else:
+        if summary.get("first_order_value_count") != frame_count - 1:
+            errors.append("D3 first-order feature count does not match selected frame count.")
+        if summary.get("second_order_value_count") != frame_count - 2:
+            errors.append("D3 second-order feature count does not match selected frame count.")
+    for key in ("d3_detector_result", "d3_temporal_features"):
+        if not artifacts.get(key):
+            errors.append(f"Completed D3 result is missing artifact: {key}.")
+
+
+def _check_no_d3_verdict_or_confidence_fields(value: Any, errors: list[str], path: str = "d3") -> None:
+    forbidden_keys = {
+        "confidence",
+        "authenticity_confidence",
+        "fake_score",
+        "real_score",
+        "synthetic_score",
+        "verdict",
+        "fake_real_verdict",
+        "authenticity_verdict",
+        "manipulation_verdict",
+        "percentage",
+        "percent_probability",
+    }
+    if isinstance(value, dict):
+        for key, child in value.items():
+            lowered = str(key).lower()
+            if lowered in forbidden_keys:
+                errors.append(f"D3 result contains forbidden verdict/confidence field: {path}.{key}.")
+            _check_no_d3_verdict_or_confidence_fields(child, errors, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            _check_no_d3_verdict_or_confidence_fields(child, errors, f"{path}[{index}]")
 
 
 def _check_observation_scopes(observations: dict[str, Any], errors: list[str]) -> None:
@@ -597,6 +709,14 @@ def _relative_paths(report: dict[str, Any]) -> list[str]:
     for artifact in unified.get("artifacts", {}).values():
         if isinstance(artifact, dict) and artifact.get("path"):
             paths.append(str(artifact["path"]))
+    learned = report.get("learned_detector_results", {})
+    d3 = learned.get("d3", {}) if isinstance(learned, dict) else {}
+    for artifact in d3.get("artifacts", {}).values():
+        if isinstance(artifact, dict) and artifact.get("path"):
+            paths.append(str(artifact["path"]))
+    relative_video_path = d3.get("input", {}).get("relative_video_path") if isinstance(d3, dict) else None
+    if relative_video_path:
+        paths.append(str(relative_video_path))
     return paths
 
 

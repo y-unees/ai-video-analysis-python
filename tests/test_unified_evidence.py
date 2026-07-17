@@ -218,7 +218,7 @@ def _report() -> dict[str, object]:
             "status": "completed",
         },
         "analysis_environment": {
-            "application_version": "0.7.1",
+            "application_version": "0.8.1",
             "report_schema_version": "0.7",
         },
         "source": {
@@ -281,6 +281,12 @@ def _report() -> dict[str, object]:
             "ranked_review_transitions": [_visual_transition()],
             "observations": [],
             "artifacts": {},
+        },
+        "learned_detector_results": {
+            "status": "not_run",
+            "d3": {},
+            "standalone_not_fused_with_unified_evidence": True,
+            "limitations": [],
         },
         "heuristic_configuration": {},
         "observations": {"metadata_facts": [], "missing_metadata": [], "temporal_heuristics": [], "audio_observations": [], "visual_consistency_observations": []},
