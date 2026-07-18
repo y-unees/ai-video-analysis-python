@@ -152,6 +152,6 @@ Pinned source was inspected. Mathematical parity is tested with deterministic te
 
 D3 remains a standalone raw-feature detector. It has no local calibration, no operating threshold, no score direction claim, and no verdict layer.
 
-## 25. v0.8.2 Deferred Work
+## 25. v0.8.3 Deferred Work
 
-v0.8.2 may add full-video multi-window D3 analysis, timeline mapping, forensic/D3 alignment, agreement/conflict analysis, and updated final evidence bundle support. None of that is implemented in v0.8.1.
+v0.8.3 may add full-video multi-window D3 analysis, timeline mapping, forensic/D3 alignment, agreement/conflict analysis, and updated final evidence bundle support. None of that is implemented in v0.8.2.

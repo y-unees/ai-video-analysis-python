@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent
 load_dotenv(PROJECT_ROOT / ".env")
 
-APP_VERSION = "0.8.1"
+APP_VERSION = "0.8.2"
 SCHEMA_VERSION = "0.7"
 
 SOURCE_DIR_NAME = "source_videos"
@@ -321,6 +321,18 @@ def learned_detector_configuration() -> dict[str, object]:
             "preprocessing_mode": os.getenv("D3_PREPROCESSING_MODE", "upstream_compatible"),
             "preserve_temporary_frames": _env_bool("D3_PRESERVE_TEMPORARY_FRAMES", False),
         },
+    }
+
+
+def gemini_compact_report_configuration() -> dict[str, object]:
+    return {
+        "enabled": _env_bool("GEMINI_COMPACT_REPORT_ENABLED", True),
+        "maximum_key_events": _env_positive_int("GEMINI_COMPACT_MAX_KEY_EVENTS", 5),
+        "maximum_findings_per_event": _env_positive_int("GEMINI_COMPACT_MAX_FINDINGS_PER_EVENT", 5),
+        "maximum_artifacts_per_event": _env_positive_int("GEMINI_COMPACT_MAX_ARTIFACTS_PER_EVENT", 4),
+        "preferred_size_bytes": _env_positive_int("GEMINI_COMPACT_PREFERRED_SIZE_BYTES", 8000),
+        "acceptable_size_bytes": _env_positive_int("GEMINI_COMPACT_ACCEPTABLE_SIZE_BYTES", 12000),
+        "hard_size_limit_bytes": _env_positive_int("GEMINI_COMPACT_HARD_SIZE_BYTES", 16000),
     }
 
 

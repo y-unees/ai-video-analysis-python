@@ -172,6 +172,7 @@ class D3Detector:
 
             device = self._select_device()
             base["execution"]["device_used"] = device
+            print("D3 progress: loading D3 model")
             try:
                 model = self._load_model(device)
             except Exception as error:
@@ -180,13 +181,16 @@ class D3Detector:
                 "download_allowed_or_cache" if self.config.get("allow_model_download") else "local_cache_only"
             )
             base["reproducibility"]["model_cache_status"] = "loader_invoked"
+            print("D3 progress: preparing D3 frame tensor")
             tensor = frames_to_torch_tensor(frames, device)
             base["reproducibility"]["frame_tensor_sha256"] = _tensor_sha256(tensor)
             base["reproducibility"]["tensor_dtype"] = str(tensor.dtype).replace("torch.", "")
+            print(f"D3 progress: running {self.config.get('encoder')} inference on {device.upper()}")
             try:
                 embeddings, first_order, second_order, summary = torch_forward_score(model, tensor)
             except Exception as error:
                 raise RuntimeError(f"inference_failure: {_sanitize(str(error))}") from error
+            print("D3 progress: computing temporal features")
             if not all(_finite(value) for value in first_order + second_order):
                 raise ValueError("D3 produced a non-finite temporal feature value.")
             base["native_output"] = {
@@ -208,6 +212,7 @@ class D3Detector:
             base["execution"]["message"] = "D3 completed. The raw score is uncalibrated and no classification threshold was applied."
             self._populate_runtime_versions(base)
             self._finish(base, start_perf)
+            print("D3 progress: writing D3 artifacts")
             try:
                 artifacts = self._write_artifacts(output_directory, base, first_order, second_order)
             except Exception as error:

@@ -15,6 +15,7 @@ from frame_analyzer import summarize_frame_analysis
 from frame_sampler import sample_video_frames
 from learned_detectors import run_learned_detectors
 from metadata_extractor import FFprobeError, extract_metadata
+from reporting import create_gemini_evidence_report
 from report_writer import (
     build_report,
     create_analysis_directory,
@@ -281,6 +282,25 @@ def main() -> int:
         else:
             reason = learned_detector_results.get("d3", {}).get("execution", {}).get("reason_code")
             print(f"D3 learned detector: {d3_status} ({reason})")
+
+        print("Creating Gemini-ready compact evidence report...")
+        compact_reference, compact_warnings = create_gemini_evidence_report(
+            analysis_dir=analysis_dir,
+            report=report,
+        )
+        warnings.extend(compact_warnings)
+        report["warnings"] = warnings
+        report["artifacts"]["gemini_evidence_report"] = compact_reference
+        if compact_reference.get("status") == "completed":
+            compactness = compact_reference.get("compactness", {})
+            print(f"Gemini-ready report created: {compactness.get('compact_report_size_bytes')} bytes")
+            ratio = compactness.get("ratio_percent")
+            if ratio is not None:
+                print(f"Compactness ratio: {ratio}% of estimated main JSON report")
+        elif compact_reference.get("status") == "failed":
+            print(f"Warning: Gemini-ready compact report failed ({compact_reference.get('reason_code')})")
+        else:
+            print(f"Gemini-ready compact report: {compact_reference.get('status')}")
 
         print("Creating reports...")
         report_paths = write_reports(analysis_dir=analysis_dir, report=report)

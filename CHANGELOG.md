@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.8.2
+
+- Added `gemini_evidence_report.json` as a compact derivative report for future Gemini-assisted interpretation.
+- Added deterministic key-event selection, finding deduplication, artifact caps, validation, and size-limit enforcement for compact reports.
+- Added compact artifact references to main JSON and TXT reports.
+- Added `schemas/gemini_interpretation_response.schema.json` for a future Gemini response contract.
+- Added `docs/GEMINI_READY_REPORT.md`.
+- Added D3 progress messages for model loading, tensor preparation, inference, temporal-feature handling, and artifact writing.
+- Kept v0.8.2 local-only: no Gemini API calls, SDK installation, network requests, media upload, probability generation, thresholds, evidence fusion, or authenticity verdicts.
+
 ## v0.8.1
 
 - Hardened the optional D3 learned-detector integration.

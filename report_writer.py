@@ -397,6 +397,7 @@ def _build_text_report(report: dict[str, Any]) -> str:
             "",
         ]
     )
+    _append_gemini_evidence_artifact_report(lines, report.get("artifacts", {}).get("gemini_evidence_report"))
 
     return "\n".join(lines)
 
@@ -834,6 +835,29 @@ def _append_learned_detector_report(lines: list[str], learned: dict[str, Any]) -
         lines.append("- None")
     for limitation in limitations:
         lines.append(f"- {limitation}")
+
+
+def _append_gemini_evidence_artifact_report(lines: list[str], reference: dict[str, Any] | None) -> None:
+    if not reference:
+        return
+    artifact = reference.get("artifact") or {}
+    compactness = reference.get("compactness") or {}
+    lines.extend(
+        [
+            "Gemini-ready compact evidence report",
+            "------------------------------------",
+            f"Generation status: {_format(reference.get('status'))}",
+            f"Path: {_format(artifact.get('path'))}",
+            f"Size bytes: {_format(artifact.get('size_bytes'))}",
+            f"SHA-256: {_format(artifact.get('sha256'))}",
+            f"Schema version: {_format(reference.get('schema_version'))}",
+            f"Purpose: {_format(reference.get('purpose'))}",
+            f"Derivative not source of truth: {_format(reference.get('derivative_not_source_of_truth'))}",
+            f"Source of truth: {_format(reference.get('source_of_truth'))}",
+            f"Compactness ratio: {_format(compactness.get('ratio_percent'))}%",
+            "",
+        ]
+    )
 
 
 def _legacy_evidence_from_observations(

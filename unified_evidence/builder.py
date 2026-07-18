@@ -660,11 +660,13 @@ def _review_highlights(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "event_id": event["event_id"],
                 "start_timestamp_seconds": event["start_timestamp_seconds"],
                 "end_timestamp_seconds": event["end_timestamp_seconds"],
+                "duration_seconds": event["duration_seconds"],
                 "review_priority": event["review_priority"],
                 "evidence_domains": event["evidence_domains"],
                 "evidence_groups_present": event["evidence_groups_present"],
                 "independent_group_count": event["independent_group_count"],
                 "cross_modal_context": event["cross_modal_context"],
+                "artifact_references": event["artifact_references"][:AI_INPUT_MAX_ARTIFACTS_PER_EVENT],
                 "source_observation_ids": event["source_observation_ids"],
                 "boundary_basis": event["boundary_basis"],
                 "context_candidate_ids": event["context_candidate_ids"],
@@ -673,6 +675,8 @@ def _review_highlights(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
                         "domain": finding["domain"],
                         "type": finding["type"],
                         "summary": finding["summary"],
+                        "metrics": finding.get("metrics", {}),
+                        "source_record_id": finding.get("source_record_id"),
                         "source_observation_ids": finding.get("source_observation_ids", []),
                     }
                     for finding in event.get("findings", [])[:4]

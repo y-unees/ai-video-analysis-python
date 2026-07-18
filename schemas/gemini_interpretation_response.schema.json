@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/gemini_interpretation_response.schema.json",
+  "title": "Future Gemini Interpretation Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "analysis_summary",
+    "major_findings",
+    "important_timestamps",
+    "uncertainties",
+    "limitations",
+    "recommended_human_review",
+    "model_disclaimer"
+  ],
+  "properties": {
+    "analysis_summary": {
+      "type": "string",
+      "maxLength": 800
+    },
+    "major_findings": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    },
+    "important_timestamps": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_timestamp_seconds", "end_timestamp_seconds", "summary"],
+        "properties": {
+          "start_timestamp_seconds": {"type": ["number", "null"]},
+          "end_timestamp_seconds": {"type": ["number", "null"]},
+          "summary": {"type": "string", "maxLength": 500}
+        }
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "maxLength": 400
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "maxLength": 400
+      }
+    },
+    "recommended_human_review": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    },
+    "model_disclaimer": {
+      "type": "string",
+      "maxLength": 800
+    }
+  }
+}

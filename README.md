@@ -79,6 +79,7 @@ reports/
     ├── evidence_timeline.jsonl
     ├── ai_interpretation_input.json
     ├── ai_interpretation_prompt.txt
+    ├── gemini_evidence_report.json    # compact derivative for future Gemini use
     ├── d3_detector_result.json        # only when D3 completes
     ├── d3_temporal_features.jsonl     # only when D3 completes
     ├── frames/
@@ -124,14 +125,25 @@ Paths in reports are relative to the report directory or project directory unles
 - Adds an optional modular learned-detector layer under `learned_detector_results`.
 - Integrates D3 as an optional local adapter when explicitly enabled and optional dependencies are installed.
 - Records D3 availability, configuration, preprocessing trace, raw second-order temporal-feature statistic, and artifacts without fusing it into unified evidence.
+- Writes `gemini_evidence_report.json`, a compact derivative artifact for future Gemini-assisted interpretation without calling Gemini.
 
 ## Schema Notes
 
 Current schema: `0.7`.
 
-Application version: `0.8.1`.
+Application version: `0.8.2`.
 
-v0.8 stable status: the optional D3 learned-detector line is stable for standalone local raw-feature reporting, with learned outputs still kept separate from unified evidence and AI-ready inputs.
+v0.8 stable status: the optional D3 learned-detector line is stable for standalone local raw-feature reporting, and v0.8.2 adds a compact Gemini-ready derivative report while keeping learned outputs separate from unified evidence and AI-ready inputs.
+
+Important additions in `0.8.2`:
+
+- Adds `gemini_evidence_report.json` as the recommended compact single-input artifact for future Gemini analysis.
+- Keeps the full forensic report and raw artifacts as the local sources of truth.
+- Adds deterministic key-event selection, finding deduplication, artifact caps, and size-limit enforcement.
+- Adds a machine-readable Gemini instruction block and future Gemini response schema.
+- Adds compact artifact references to the main JSON and TXT reports.
+- Adds D3 progress messages for long CPU inference stages.
+- Does not call Gemini, install a Gemini SDK, send media, add network requests, create probabilities, or assign authenticity verdicts.
 
 Important fixes in `0.8.1`:
 
@@ -229,6 +241,14 @@ Important additions in `0.4`:
 - Adds scene-aware representative frames.
 
 ## Changelog
+
+### v0.8.2
+
+- Added compact Gemini-ready evidence report generation without Gemini API calls.
+- Added compact artifact references in the main JSON/TXT reports.
+- Added future Gemini response contract schema and documentation.
+- Added D3 progress feedback for long local inference stages.
+- Preserved local source-of-truth forensic artifacts and non-verdict semantics.
 
 ### v0.8.1
 
