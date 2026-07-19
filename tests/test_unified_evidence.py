@@ -218,7 +218,7 @@ def _report() -> dict[str, object]:
             "status": "completed",
         },
         "analysis_environment": {
-            "application_version": "0.8.2",
+            "application_version": "0.9.2",
             "report_schema_version": "0.7",
         },
         "source": {

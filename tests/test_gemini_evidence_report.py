@@ -213,7 +213,7 @@ def _report() -> dict[str, object]:
     return {
         "schema_version": "0.7",
         "analysis": {"started_at": "2026-07-18T00:00:00+00:00", "completed_at": "2026-07-18T00:00:01+00:00", "processing_duration_seconds": 1.0, "status": "completed"},
-        "analysis_environment": {"application_version": "0.8.2", "report_schema_version": "0.7"},
+        "analysis_environment": {"application_version": "0.9.2", "report_schema_version": "0.7"},
         "source": {"filename": "sample.mp4", "path": "source_videos/sample.mp4", "absolute_path_included": False, "extension": ".mp4", "size_bytes": 1, "size_human_readable": "1 B", "sha256": "abc"},
         "metadata": {
             "container": {"duration_seconds": 5.0, "format_name": "mov,mp4", "friendly_format": "MP4/MOV family", "format_long_name": "QuickTime / MOV", "duration_readable": "5.00 seconds", "start_time": 0.0, "bit_rate_readable": None, "probe_score": 100, "stream_count": 2},

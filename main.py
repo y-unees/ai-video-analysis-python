@@ -15,6 +15,7 @@ from frame_analyzer import summarize_frame_analysis
 from frame_sampler import sample_video_frames
 from learned_detectors import run_learned_detectors
 from metadata_extractor import FFprobeError, extract_metadata
+from outcome import create_outcome_features_artifact
 from reporting import create_gemini_evidence_report
 from report_writer import (
     build_report,
@@ -282,6 +283,16 @@ def main() -> int:
         else:
             reason = learned_detector_results.get("d3", {}).get("execution", {}).get("reason_code")
             print(f"D3 learned detector: {d3_status} ({reason})")
+
+        outcome_reference, outcome_warnings = create_outcome_features_artifact(
+            analysis_dir=analysis_dir,
+            report=report,
+        )
+        warnings.extend(outcome_warnings)
+        report["warnings"] = warnings
+        report["artifacts"]["outcome_features"] = outcome_reference
+        if outcome_reference.get("status") == "completed":
+            print(f"Outcome features saved: {outcome_reference.get('artifact', {}).get('path')}")
 
         print("Creating Gemini-ready compact evidence report...")
         compact_reference, compact_warnings = create_gemini_evidence_report(

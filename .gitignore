@@ -1,12 +1,31 @@
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
 .agents/
 reports/
+dataset/*
+!dataset/.gitkeep
+dataset_sources/*
+!dataset_sources/.gitkeep
+datasets/
 
 # Local input videos can be private and large; keep them out of Git by default.
 source_videos/
 .env
+.env.*
+!.env.example
+*.log
+*.tmp
+tmp/
+temp/
 
 # Optional learned-detector local assets.
 d3_model_cache/
@@ -14,3 +33,11 @@ model_cache/
 learned_detector_temp/
 d3_temporary_frames/
 .model_cache/
+.cache/
+.torch/
+huggingface_cache/
+torch_cache/
+xclip_cache/
+
+# Local one-off shell helpers for file renaming or dataset staging.
+script.sh
