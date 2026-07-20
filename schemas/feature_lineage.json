@@ -1,0 +1,182 @@
+{
+  "features": [
+    {
+      "dependencies": [
+        "frame_summary.dark_frame_ratio",
+        "frame_summary.white_frame_ratio"
+      ],
+      "dependency_order": [
+        "frame_summary.dark_frame_ratio",
+        "frame_summary.white_frame_ratio"
+      ],
+      "explanation": "Dark-frame ratio plus white-frame ratio for the same sample.",
+      "export_name": "derived.exposure_extreme_ratio",
+      "feature_id": "derived.exposure_extreme_ratio",
+      "fitted": false,
+      "formula": {
+        "inputs": [
+          "frame_summary.dark_frame_ratio",
+          "frame_summary.white_frame_ratio"
+        ],
+        "null_behavior": "null_if_any_missing",
+        "type": "sum"
+      },
+      "introduced_version": "0.9.4",
+      "null_behavior": "returns null when required numeric inputs are missing",
+      "source_modules": [
+        "frame_analysis"
+      ],
+      "uses_target": false,
+      "zero_denominator_behavior": null
+    },
+    {
+      "dependencies": [
+        "frame_summary.mean_sharpness",
+        "frame_summary.mean_contrast"
+      ],
+      "dependency_order": [
+        "frame_summary.mean_sharpness",
+        "frame_summary.mean_contrast"
+      ],
+      "explanation": "Mean sharpness divided by mean contrast for the same sample.",
+      "export_name": "derived.sharpness_contrast_ratio",
+      "feature_id": "derived.sharpness_contrast_ratio",
+      "fitted": false,
+      "formula": {
+        "denominator": "frame_summary.mean_contrast",
+        "numerator": "frame_summary.mean_sharpness",
+        "type": "safe_ratio",
+        "zero_denominator": "null"
+      },
+      "introduced_version": "0.9.4",
+      "null_behavior": "returns null when required numeric inputs are missing",
+      "source_modules": [
+        "frame_analysis"
+      ],
+      "uses_target": false,
+      "zero_denominator_behavior": "null"
+    },
+    {
+      "dependencies": [
+        "temporal_summary.maximum_motion_magnitude",
+        "temporal_summary.mean_motion_magnitude"
+      ],
+      "dependency_order": [
+        "temporal_summary.maximum_motion_magnitude",
+        "temporal_summary.mean_motion_magnitude"
+      ],
+      "explanation": "Maximum motion magnitude divided by mean motion magnitude for the same sample.",
+      "export_name": "derived.motion_spike_ratio",
+      "feature_id": "derived.motion_spike_ratio",
+      "fitted": false,
+      "formula": {
+        "denominator": "temporal_summary.mean_motion_magnitude",
+        "numerator": "temporal_summary.maximum_motion_magnitude",
+        "type": "safe_ratio",
+        "zero_denominator": "null"
+      },
+      "introduced_version": "0.9.4",
+      "null_behavior": "returns null when required numeric inputs are missing",
+      "source_modules": [
+        "temporal_analysis"
+      ],
+      "uses_target": false,
+      "zero_denominator_behavior": "null"
+    },
+    {
+      "dependencies": [
+        "temporal_summary.maximum_flow_warp_residual",
+        "temporal_summary.mean_flow_warp_residual"
+      ],
+      "dependency_order": [
+        "temporal_summary.maximum_flow_warp_residual",
+        "temporal_summary.mean_flow_warp_residual"
+      ],
+      "explanation": "Maximum flow-warp residual divided by mean flow-warp residual for the same sample.",
+      "export_name": "derived.flow_residual_ratio",
+      "feature_id": "derived.flow_residual_ratio",
+      "fitted": false,
+      "formula": {
+        "denominator": "temporal_summary.mean_flow_warp_residual",
+        "numerator": "temporal_summary.maximum_flow_warp_residual",
+        "type": "safe_ratio",
+        "zero_denominator": "null"
+      },
+      "introduced_version": "0.9.4",
+      "null_behavior": "returns null when required numeric inputs are missing",
+      "source_modules": [
+        "temporal_analysis"
+      ],
+      "uses_target": false,
+      "zero_denominator_behavior": "null"
+    },
+    {
+      "dependencies": [
+        "audio_summary.audio_window_count"
+      ],
+      "dependency_order": [
+        "audio_summary.audio_window_count"
+      ],
+      "explanation": "Indicator set to 1 when audio window metrics are present for the same sample, otherwise 0.",
+      "export_name": "derived.audio_features_available",
+      "feature_id": "derived.audio_features_available",
+      "fitted": false,
+      "formula": {
+        "input": "audio_summary.audio_window_count",
+        "null_behavior": "0",
+        "type": "availability_indicator"
+      },
+      "introduced_version": "0.9.4",
+      "null_behavior": "returns null when required numeric inputs are missing",
+      "source_modules": [
+        "audio_analysis"
+      ],
+      "uses_target": false,
+      "zero_denominator_behavior": null
+    },
+    {
+      "dependencies": [
+        "frame_summary.sampled_frame_count",
+        "temporal_summary.analyzed_transition_count",
+        "audio_summary.audio_window_count",
+        "visual_consistency_summary.analyzed_region_record_count",
+        "d3_summary.d3_status"
+      ],
+      "dependency_order": [
+        "frame_summary.sampled_frame_count",
+        "temporal_summary.analyzed_transition_count",
+        "audio_summary.audio_window_count",
+        "visual_consistency_summary.analyzed_region_record_count",
+        "d3_summary.d3_status"
+      ],
+      "explanation": "Fraction of core evidence modules with available same-sample evidence.",
+      "export_name": "derived.evidence_module_coverage",
+      "feature_id": "derived.evidence_module_coverage",
+      "fitted": false,
+      "formula": {
+        "denominator": 5,
+        "inputs": [
+          "frame_summary.sampled_frame_count",
+          "temporal_summary.analyzed_transition_count",
+          "audio_summary.audio_window_count",
+          "visual_consistency_summary.analyzed_region_record_count",
+          "d3_summary.d3_status"
+        ],
+        "type": "availability_count"
+      },
+      "introduced_version": "0.9.4",
+      "null_behavior": "returns null when required numeric inputs are missing",
+      "source_modules": [
+        "audio_analysis",
+        "frame_analysis",
+        "learned_detectors.d3",
+        "temporal_analysis",
+        "visual_consistency"
+      ],
+      "uses_target": false,
+      "zero_denominator_behavior": null
+    }
+  ],
+  "project_version": "0.9.4",
+  "schema_version": "0.9.4"
+}

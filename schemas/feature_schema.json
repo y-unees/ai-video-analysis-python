@@ -1,0 +1,848 @@
+{
+  "compatibility_rules": {
+    "derivation_change": "breaking",
+    "description_only_change": "non-breaking",
+    "new_model_feature": "requires_regeneration",
+    "nullable_false_to_true": "potentially_breaking",
+    "removed_model_feature": "breaking",
+    "type_or_unit_change": "breaking"
+  },
+  "deprecated_fields": [],
+  "derived_model_candidate_features": [
+    {
+      "data_type": "float",
+      "dependencies": [
+        "frame_summary.dark_frame_ratio",
+        "frame_summary.white_frame_ratio"
+      ],
+      "deprecated_version": null,
+      "derived": true,
+      "export_name": "derived.exposure_extreme_ratio",
+      "id": "derived.exposure_extreme_ratio",
+      "introduced_version": "0.9.4",
+      "maximum": 2.0,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "feature_engineering",
+      "units": "ratio"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [
+        "frame_summary.mean_sharpness",
+        "frame_summary.mean_contrast"
+      ],
+      "deprecated_version": null,
+      "derived": true,
+      "export_name": "derived.sharpness_contrast_ratio",
+      "id": "derived.sharpness_contrast_ratio",
+      "introduced_version": "0.9.4",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "feature_engineering",
+      "units": "ratio"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [
+        "temporal_summary.maximum_motion_magnitude",
+        "temporal_summary.mean_motion_magnitude"
+      ],
+      "deprecated_version": null,
+      "derived": true,
+      "export_name": "derived.motion_spike_ratio",
+      "id": "derived.motion_spike_ratio",
+      "introduced_version": "0.9.4",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "feature_engineering",
+      "units": "ratio"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [
+        "temporal_summary.maximum_flow_warp_residual",
+        "temporal_summary.mean_flow_warp_residual"
+      ],
+      "deprecated_version": null,
+      "derived": true,
+      "export_name": "derived.flow_residual_ratio",
+      "id": "derived.flow_residual_ratio",
+      "introduced_version": "0.9.4",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "feature_engineering",
+      "units": "ratio"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [
+        "audio_summary.audio_window_count"
+      ],
+      "deprecated_version": null,
+      "derived": true,
+      "export_name": "derived.audio_features_available",
+      "id": "derived.audio_features_available",
+      "introduced_version": "0.9.4",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "feature_engineering",
+      "units": "ratio"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [
+        "frame_summary.sampled_frame_count",
+        "temporal_summary.analyzed_transition_count",
+        "audio_summary.audio_window_count",
+        "visual_consistency_summary.analyzed_region_record_count",
+        "d3_summary.d3_status"
+      ],
+      "deprecated_version": null,
+      "derived": true,
+      "export_name": "derived.evidence_module_coverage",
+      "id": "derived.evidence_module_coverage",
+      "introduced_version": "0.9.4",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "feature_engineering",
+      "units": "ratio"
+    }
+  ],
+  "excluded_fields": [
+    {
+      "category": "timestamp",
+      "export_name": "added_at",
+      "id": "added_at",
+      "reason": "category is timestamp"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "audio_summary.audio_window_count",
+      "id": "audio_summary.audio_window_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "audio_summary.clipping_interval_count",
+      "id": "audio_summary.clipping_interval_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "audio_summary.maximum_audio_energy_change",
+      "id": "audio_summary.maximum_audio_energy_change",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "audio_summary.mean_audio_rms",
+      "id": "audio_summary.mean_audio_rms",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "audio_summary.silence_interval_count",
+      "id": "audio_summary.silence_interval_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "analysis_metadata",
+      "export_name": "d3_summary.d3_calibration_status",
+      "id": "d3_summary.d3_calibration_status",
+      "reason": "category is analysis_metadata"
+    },
+    {
+      "category": "analysis_metadata",
+      "export_name": "d3_summary.d3_distance_mode",
+      "id": "d3_summary.d3_distance_mode",
+      "reason": "category is analysis_metadata"
+    },
+    {
+      "category": "analysis_metadata",
+      "export_name": "d3_summary.d3_encoder",
+      "id": "d3_summary.d3_encoder",
+      "reason": "category is analysis_metadata"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "d3_summary.d3_first_order_value_count",
+      "id": "d3_summary.d3_first_order_value_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "analysis_metadata",
+      "export_name": "d3_summary.d3_score_direction",
+      "id": "d3_summary.d3_score_direction",
+      "reason": "category is analysis_metadata"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "d3_summary.d3_second_order_value_count",
+      "id": "d3_summary.d3_second_order_value_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "d3_summary.d3_selected_frame_count",
+      "id": "d3_summary.d3_selected_frame_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "analysis_metadata",
+      "export_name": "d3_summary.d3_status",
+      "id": "d3_summary.d3_status",
+      "reason": "category is analysis_metadata"
+    },
+    {
+      "category": "leakage",
+      "export_name": "feature_file",
+      "id": "feature_file",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "frame_summary.dark_frame_ratio",
+      "id": "frame_summary.dark_frame_ratio",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "frame_summary.white_frame_ratio",
+      "id": "frame_summary.white_frame_ratio",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "leakage",
+      "export_name": "generator_or_camera",
+      "id": "generator_or_camera",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "leakage",
+      "export_name": "identity.analysis_id",
+      "id": "identity.analysis_id",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "analysis_metadata",
+      "export_name": "identity.application_version",
+      "id": "identity.application_version",
+      "reason": "category is analysis_metadata"
+    },
+    {
+      "category": "leakage",
+      "export_name": "identity.expected_label",
+      "id": "identity.expected_label",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "analysis_metadata",
+      "export_name": "identity.feature_schema_version",
+      "id": "identity.feature_schema_version",
+      "reason": "category is analysis_metadata"
+    },
+    {
+      "category": "leakage",
+      "export_name": "identity.video_name",
+      "id": "identity.video_name",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "identifier",
+      "export_name": "identity.video_sha256",
+      "id": "identity.video_sha256",
+      "reason": "category is identifier"
+    },
+    {
+      "category": "raw_boolean",
+      "export_name": "media.audio_present",
+      "id": "media.audio_present",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "timestamp",
+      "export_name": "metadata_indicators.creation_time_present",
+      "id": "metadata_indicators.creation_time_present",
+      "reason": "category is timestamp"
+    },
+    {
+      "category": "raw_boolean",
+      "export_name": "metadata_indicators.duration_metadata_consistent",
+      "id": "metadata_indicators.duration_metadata_consistent",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_boolean",
+      "export_name": "metadata_indicators.encoder_metadata_present",
+      "id": "metadata_indicators.encoder_metadata_present",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "leakage",
+      "export_name": "notes",
+      "id": "notes",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "leakage",
+      "export_name": "sample_id",
+      "id": "sample_id",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "leakage",
+      "export_name": "source",
+      "id": "source",
+      "reason": "leakage risk"
+    },
+    {
+      "category": "unsupported",
+      "export_name": "temporal_summary.maximum_normalized_frame_difference",
+      "id": "temporal_summary.maximum_normalized_frame_difference",
+      "reason": "category is unsupported"
+    },
+    {
+      "category": "unsupported",
+      "export_name": "temporal_summary.mean_normalized_frame_difference",
+      "id": "temporal_summary.mean_normalized_frame_difference",
+      "reason": "category is unsupported"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "temporal_summary.notable_transition_count",
+      "id": "temporal_summary.notable_transition_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "temporal_summary.scene_boundary_count",
+      "id": "temporal_summary.scene_boundary_count",
+      "reason": "not a model candidate"
+    },
+    {
+      "category": "raw_numeric",
+      "export_name": "visual_consistency_summary.ranked_consistency_transition_count",
+      "id": "visual_consistency_summary.ranked_consistency_transition_count",
+      "reason": "not a model candidate"
+    }
+  ],
+  "feature_order": [
+    "audio_summary.ranked_audio_transition_count",
+    "d3_summary.d3_raw_score",
+    "d3_summary.d3_second_order_mean",
+    "d3_summary.d3_second_order_standard_deviation",
+    "frame_summary.mean_brightness",
+    "frame_summary.mean_contrast",
+    "frame_summary.mean_sharpness",
+    "frame_summary.sampled_frame_count",
+    "media.duration_seconds",
+    "media.frame_count",
+    "media.frame_rate",
+    "media.height",
+    "media.width",
+    "temporal_summary.analyzed_transition_count",
+    "temporal_summary.maximum_flow_warp_residual",
+    "temporal_summary.maximum_motion_magnitude",
+    "temporal_summary.mean_flow_warp_residual",
+    "temporal_summary.mean_motion_magnitude",
+    "temporal_summary.near_static_interval_count",
+    "unified_evidence_summary.cross_modal_event_count",
+    "unified_evidence_summary.high_priority_event_count",
+    "unified_evidence_summary.maximum_independent_evidence_group_count",
+    "unified_evidence_summary.moderate_priority_event_count",
+    "unified_evidence_summary.timeline_event_count",
+    "visual_consistency_summary.analyzed_region_record_count",
+    "visual_consistency_summary.maximum_detail_residual",
+    "visual_consistency_summary.maximum_edge_instability",
+    "visual_consistency_summary.maximum_texture_distance",
+    "visual_consistency_summary.maximum_unstable_region_count",
+    "visual_consistency_summary.sustained_instability_interval_count",
+    "derived.exposure_extreme_ratio",
+    "derived.sharpness_contrast_ratio",
+    "derived.motion_spike_ratio",
+    "derived.flow_residual_ratio",
+    "derived.audio_features_available",
+    "derived.evidence_module_coverage"
+  ],
+  "feature_schema_version": "0.9.4",
+  "generated_at": "2026-07-20T09:06:08+00:00",
+  "project_version": "0.9.4",
+  "raw_model_candidate_features": [
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "audio_summary.ranked_audio_transition_count",
+      "id": "audio_summary.ranked_audio_transition_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "audio_analysis",
+      "units": "count"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "d3_summary.d3_raw_score",
+      "id": "d3_summary.d3_raw_score",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "learned_detectors.d3",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "d3_summary.d3_second_order_mean",
+      "id": "d3_summary.d3_second_order_mean",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "learned_detectors.d3",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "d3_summary.d3_second_order_standard_deviation",
+      "id": "d3_summary.d3_second_order_standard_deviation",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "learned_detectors.d3",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "frame_summary.mean_brightness",
+      "id": "frame_summary.mean_brightness",
+      "introduced_version": "0.9.0",
+      "maximum": 255.0,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "frame_analysis",
+      "units": "pixel_intensity"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "frame_summary.mean_contrast",
+      "id": "frame_summary.mean_contrast",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "frame_analysis",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "frame_summary.mean_sharpness",
+      "id": "frame_summary.mean_sharpness",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "frame_analysis",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "frame_summary.sampled_frame_count",
+      "id": "frame_summary.sampled_frame_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "frame_analysis",
+      "units": "count"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "media.duration_seconds",
+      "id": "media.duration_seconds",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "metadata_extractor",
+      "units": "seconds"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "media.frame_count",
+      "id": "media.frame_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "metadata_extractor",
+      "units": "count"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "media.frame_rate",
+      "id": "media.frame_rate",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "metadata_extractor",
+      "units": "frames_per_second"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "media.height",
+      "id": "media.height",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "metadata_extractor",
+      "units": "pixels"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "media.width",
+      "id": "media.width",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "metadata_extractor",
+      "units": "pixels"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "temporal_summary.analyzed_transition_count",
+      "id": "temporal_summary.analyzed_transition_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "temporal_analysis",
+      "units": "count"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "temporal_summary.maximum_flow_warp_residual",
+      "id": "temporal_summary.maximum_flow_warp_residual",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "temporal_analysis",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "temporal_summary.maximum_motion_magnitude",
+      "id": "temporal_summary.maximum_motion_magnitude",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "temporal_analysis",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "temporal_summary.mean_flow_warp_residual",
+      "id": "temporal_summary.mean_flow_warp_residual",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "temporal_analysis",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "temporal_summary.mean_motion_magnitude",
+      "id": "temporal_summary.mean_motion_magnitude",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "temporal_analysis",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "temporal_summary.near_static_interval_count",
+      "id": "temporal_summary.near_static_interval_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "temporal_analysis",
+      "units": "count"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "unified_evidence_summary.cross_modal_event_count",
+      "id": "unified_evidence_summary.cross_modal_event_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "unified_evidence",
+      "units": "count"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "unified_evidence_summary.high_priority_event_count",
+      "id": "unified_evidence_summary.high_priority_event_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "unified_evidence",
+      "units": "count"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "unified_evidence_summary.maximum_independent_evidence_group_count",
+      "id": "unified_evidence_summary.maximum_independent_evidence_group_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "unified_evidence",
+      "units": "count"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "unified_evidence_summary.moderate_priority_event_count",
+      "id": "unified_evidence_summary.moderate_priority_event_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "unified_evidence",
+      "units": "count"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "unified_evidence_summary.timeline_event_count",
+      "id": "unified_evidence_summary.timeline_event_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": true,
+      "source_module": "unified_evidence",
+      "units": "count"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "visual_consistency_summary.analyzed_region_record_count",
+      "id": "visual_consistency_summary.analyzed_region_record_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "visual_consistency",
+      "units": "count"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "visual_consistency_summary.maximum_detail_residual",
+      "id": "visual_consistency_summary.maximum_detail_residual",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "visual_consistency",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "visual_consistency_summary.maximum_edge_instability",
+      "id": "visual_consistency_summary.maximum_edge_instability",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "visual_consistency",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "float",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "visual_consistency_summary.maximum_texture_distance",
+      "id": "visual_consistency_summary.maximum_texture_distance",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": null,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "visual_consistency",
+      "units": "dimensionless"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "visual_consistency_summary.maximum_unstable_region_count",
+      "id": "visual_consistency_summary.maximum_unstable_region_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "visual_consistency",
+      "units": "count"
+    },
+    {
+      "data_type": "integer",
+      "dependencies": [],
+      "deprecated_version": null,
+      "derived": false,
+      "export_name": "visual_consistency_summary.sustained_instability_interval_count",
+      "id": "visual_consistency_summary.sustained_instability_interval_count",
+      "introduced_version": "0.9.0",
+      "maximum": null,
+      "minimum": 0.0,
+      "model_candidate": true,
+      "nullable": false,
+      "source_module": "visual_consistency",
+      "units": "count"
+    }
+  ],
+  "registry_path": "schemas/feature_registry.json",
+  "registry_version": "0.9.4",
+  "schema_fingerprint": "8f06d41a32ef09f3565011dbf754263ab4d661b454368fa6f52e40e39305d228",
+  "target": {
+    "classes": [
+      "real",
+      "ai_generated"
+    ],
+    "column": "expected_label",
+    "encoding": {
+      "ai_generated": 1,
+      "real": 0
+    }
+  }
+}

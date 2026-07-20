@@ -2,7 +2,7 @@
 
 This file keeps the project history that used to live inside the README. The README now focuses on purpose, setup, and current workflows; this file explains how the system grew over time and what each version means technically.
 
-Current application version: `0.9.3`
+Current application version: `0.9.4`
 
 Current report schema version: `0.7`
 
@@ -12,11 +12,47 @@ Dataset manifest schema version: `0.9.1`
 
 Feature audit schema version: `0.9.3`
 
+Feature schema version: `0.9.4`
+
+Registry version: `0.9.4`
+
 ## Version Line
 
 The project is still pre-1.0. Versions describe local workflow maturity, artifact contracts, and analysis-module boundaries. They do not imply a production detector, trained classifier, or validated probability model.
 
 The core principle across all versions remains the same: produce local, explainable evidence artifacts without assigning authenticity verdicts.
+
+## v0.9.4
+
+v0.9.4 adds the feature engineering and dataset standardization layer that converts raw exported feature rows into a stable, registry-controlled feature vector for future model experiments.
+
+Key additions:
+
+- `schemas/feature_registry.json` as the canonical registry for observed raw fields and approved derived fields.
+- `schemas/feature_schema.json` with project, registry, feature schema, target definition, ordered model-candidate features, excluded fields, compatibility rules, and deterministic schema fingerprint.
+- `schemas/feature_lineage.json` for derived-feature dependencies and formulas.
+- `schemas/feature_evolution.json` for supported feature evolution metadata.
+- Generated `docs/FEATURES.md`.
+- `dataset_tools.feature_preparation` module.
+- `python tools/dataset_tool.py feature-registry`.
+- `python tools/dataset_tool.py validate-features`.
+- `python tools/dataset_tool.py engineer-features`.
+- `python tools/dataset_tool.py standardize-features`.
+- `python tools/dataset_tool.py check-feature-compatibility`.
+- `python tools/dataset_tool.py generate-feature-docs`.
+- `python tools/dataset_tool.py prepare-features`.
+- Standardized outputs under `dataset/standardized/`.
+- Six same-sample derived features:
+  - `derived.exposure_extreme_ratio`
+  - `derived.sharpness_contrast_ratio`
+  - `derived.motion_spike_ratio`
+  - `derived.flow_residual_ratio`
+  - `derived.audio_features_available`
+  - `derived.evidence_module_coverage`
+
+Important constraint:
+
+Standardization in v0.9.4 means canonical names, ordering, typing, null handling, ranges, lineage, compatibility, and per-sample derivations. It does not perform fitted z-score scaling, fitted min-max scaling, fitted imputation, PCA, target-aware feature selection, train/test splitting, classifier training, prediction, probabilities, thresholds, or verdict generation.
 
 ## v0.9.3
 
@@ -340,7 +376,7 @@ Application version and schema version are separate:
 - `OUTCOME_FEATURE_SCHEMA_VERSION` identifies the `outcome_features.json` contract.
 - `DATASET_MANIFEST_SCHEMA_VERSION` identifies the dataset manifest contract.
 
-This means `APP_VERSION` can be `0.9.3` while the main report schema remains `0.7`, because v0.8 and v0.9 added optional artifacts, dataset tooling, and feature auditing without replacing the core report schema.
+This means `APP_VERSION` can be `0.9.4` while the main report schema remains `0.7`, because v0.8 and v0.9 added optional artifacts, dataset tooling, feature auditing, and standardized feature schemas without replacing the core report schema.
 
 ## Stable Non-Goals
 

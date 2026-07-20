@@ -10,13 +10,20 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from dataset_tools import (
+    check_feature_compatibility,
     plan_faceforensics_samples,
     export_dataset_csv,
     export_dataset_jsonl,
+    generate_feature_docs,
+    generate_feature_schema,
+    load_feature_registry,
     print_audit_summary,
+    print_preparation_summary,
     register_sample,
     run_feature_audit,
+    run_feature_preparation,
     summarize_dataset,
+    validate_feature_registry,
     validate_plan,
     validate_dataset,
     write_faceforensics_audit,
@@ -83,6 +90,41 @@ def main() -> int:
 
     audit_features_parser = subparsers.add_parser("audit-features", help="Run the full dataset statistics and feature audit workflow.")
     add_audit_options(audit_features_parser)
+
+    def add_prepare_options(command: argparse.ArgumentParser) -> None:
+        command.add_argument("--input", default=None, help="Raw feature export path. Defaults to dataset/exports/dataset_features.csv.")
+        command.add_argument("--output-dir", default="dataset/standardized", help="Directory for standardized outputs.")
+        command.add_argument("--registry", default="schemas/feature_registry.json", help="Feature registry path.")
+        command.add_argument("--schema", default="schemas/feature_schema.json", help="Feature schema path.")
+        command.add_argument("--strict", action="store_true", help="Fail on strict validation findings.")
+        command.add_argument("--overwrite", action="store_true", default=True, help="Overwrite generated outputs.")
+        command.add_argument("--allow-unregistered", action="store_true", help="Allow unregistered exported fields as warnings.")
+        command.add_argument("--report-only", action="store_true", help="Run validation/preparation logic without writing standardized outputs.")
+
+    feature_registry_parser = subparsers.add_parser("feature-registry", help="Validate the canonical feature registry.")
+    feature_registry_parser.add_argument("--registry", default="schemas/feature_registry.json")
+
+    validate_features_parser = subparsers.add_parser("validate-features", help="Validate raw exported feature values against the registry.")
+    add_prepare_options(validate_features_parser)
+
+    engineer_features_parser = subparsers.add_parser("engineer-features", help="Calculate approved same-sample derived features.")
+    add_prepare_options(engineer_features_parser)
+
+    standardize_features_parser = subparsers.add_parser("standardize-features", help="Write standardized feature CSV and JSONL outputs.")
+    add_prepare_options(standardize_features_parser)
+
+    compatibility_parser = subparsers.add_parser("check-feature-compatibility", help="Check standardized dataset or schema compatibility.")
+    compatibility_parser.add_argument("--dataset", default=None)
+    compatibility_parser.add_argument("--old-schema", default=None)
+    compatibility_parser.add_argument("--new-schema", default="schemas/feature_schema.json")
+
+    generate_docs_parser = subparsers.add_parser("generate-feature-docs", help="Generate feature documentation from registry and schema.")
+    generate_docs_parser.add_argument("--registry", default="schemas/feature_registry.json")
+    generate_docs_parser.add_argument("--schema", default="schemas/feature_schema.json")
+    generate_docs_parser.add_argument("--output", default="docs/FEATURES.md")
+
+    prepare_features_parser = subparsers.add_parser("prepare-features", help="Run the full v0.9.4 feature preparation workflow.")
+    add_prepare_options(prepare_features_parser)
 
     args = parser.parse_args()
     dataset_root = Path(args.dataset_root)
@@ -160,6 +202,51 @@ def main() -> int:
                 print(f"Feature audit written: {Path(args.output_dir)}")
             else:
                 print_audit_summary(audit)
+            return 0
+        if args.command == "feature-registry":
+            registry = load_feature_registry(Path(args.registry))
+            result = validate_feature_registry(registry)
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result["status"] == "valid" else 1
+        if args.command in {"validate-features", "engineer-features", "standardize-features", "prepare-features"}:
+            result = run_feature_preparation(
+                input_path=Path(args.input) if args.input else None,
+                output_dir=Path(args.output_dir),
+                registry_path=Path(args.registry),
+                schema_path=Path(args.schema),
+                strict=args.strict,
+                overwrite=args.overwrite,
+                allow_unregistered=args.allow_unregistered,
+                report_only=args.report_only,
+            )
+            if args.command == "validate-features":
+                print(
+                    f"Feature validation complete: errors={result['validation_error_count']}, "
+                    f"warnings={result['validation_warning_count']}, unregistered={result['unregistered_field_count']}"
+                )
+            elif args.command == "engineer-features":
+                print(
+                    f"Feature engineering complete: derived={result['derived_candidate_count']}, "
+                    f"missing_dependencies={result['missing_dependency_count']}"
+                )
+            elif args.command == "standardize-features":
+                print(f"Standardized features written: {result['output_paths'].get('standardized_csv')}")
+            else:
+                print_preparation_summary(result)
+            return 0 if result["validation_error_count"] == 0 or not args.strict else 1
+        if args.command == "check-feature-compatibility":
+            result = check_feature_compatibility(
+                old_schema_path=Path(args.old_schema) if args.old_schema else None,
+                new_schema_path=Path(args.new_schema) if args.new_schema else None,
+                dataset_path=Path(args.dataset) if args.dataset else None,
+            )
+            print(json.dumps(result, indent=2, sort_keys=True))
+            return 0 if result["status"] in {"compatible", "compatible_with_warnings", "unknown"} else 1
+        if args.command == "generate-feature-docs":
+            registry = load_feature_registry(Path(args.registry))
+            schema = generate_feature_schema(registry, Path(args.schema))
+            path = generate_feature_docs(registry, schema, Path(args.output))
+            print(f"Feature documentation written: {path}")
             return 0
     except Exception as error:
         print(f"Dataset tool error: {error}")

@@ -21,7 +21,7 @@ class OutcomeFeatureTests(unittest.TestCase):
         report = _outcome_report()
         features = build_outcome_features(report, analysis_id="analysis-001").to_dict()
         self.assertEqual(features["identity"]["feature_schema_version"], OUTCOME_FEATURE_SCHEMA_VERSION)
-        self.assertEqual(features["identity"]["application_version"], "0.9.3")
+        self.assertEqual(features["identity"]["application_version"], "0.9.4")
         self.assertEqual(features["identity"]["analysis_id"], "analysis-001")
         self.assertEqual(features["identity"]["video_name"], "sample.mp4")
         self.assertEqual(features["identity"]["video_sha256"], "abc")
@@ -126,7 +126,7 @@ class OutcomeFeatureTests(unittest.TestCase):
 
 def _outcome_report() -> dict[str, object]:
     report = _report()
-    report["analysis_environment"]["application_version"] = "0.9.3"
+    report["analysis_environment"]["application_version"] = "0.9.4"
     report["metadata"]["video"]["frame_count"] = {"reported_by_stream": None, "estimated_from_duration": 150, "difference": None}
     report["metadata"]["container"]["tags"] = {"creation_time": "2026-01-01T00:00:00Z"}
     report["metadata"]["video"]["tags"] = {}

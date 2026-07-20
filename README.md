@@ -1,6 +1,6 @@
 # Local Video Analysis MVP
 
-Current version: `v0.9.3`
+Current version: `v0.9.4`
 
 Local Video Analysis MVP is a local-first, terminal-based video analysis project for collecting explainable forensic evidence from videos. It is being built as a cautious foundation for future labeled-dataset testing, not as a finished deepfake detector.
 
@@ -38,6 +38,7 @@ Implemented today:
 - FaceForensics++ metadata audit and deterministic pilot planning.
 - One-command local dataset preparation with `python script.py`.
 - Dataset statistics, feature-quality auditing, leakage checks, and future model-feature schema generation.
+- Versioned feature registry, explainable derived features, standardized feature exports, lineage, and schema compatibility checks.
 
 Not implemented:
 
@@ -392,6 +393,65 @@ The current 12-video dataset is a pilot dataset. It can test the workflow, but i
 
 See [docs/FEATURE_AUDIT.md](docs/FEATURE_AUDIT.md) for command defaults, output descriptions, and readiness rules.
 
+## Feature Engineering and Standardization
+
+v0.9.4 adds a registry-controlled feature layer between raw exported features and future model experiments.
+
+The flow is:
+
+```text
+dataset/exports/dataset_features.csv
+    -> schemas/feature_registry.json
+    -> schemas/feature_schema.json
+    -> dataset/standardized/standardized_features.csv
+```
+
+Run the full preparation workflow:
+
+```powershell
+python tools\dataset_tool.py prepare-features
+```
+
+Individual commands:
+
+```powershell
+python tools\dataset_tool.py feature-registry
+python tools\dataset_tool.py validate-features
+python tools\dataset_tool.py engineer-features
+python tools\dataset_tool.py standardize-features
+python tools\dataset_tool.py check-feature-compatibility
+python tools\dataset_tool.py generate-feature-docs
+```
+
+Generated schema/docs:
+
+```text
+schemas/feature_registry.json
+schemas/feature_schema.json
+schemas/feature_lineage.json
+schemas/feature_evolution.json
+docs/FEATURES.md
+```
+
+Generated standardized dataset outputs:
+
+```text
+dataset/standardized/
+├── standardized_features.csv
+├── standardized_features.jsonl
+├── standardized_dataset_profile.json
+├── feature_validation.json
+├── feature_validation.csv
+├── feature_engineering_report.json
+├── feature_engineering_report.txt
+├── compatibility_report.json
+└── compatibility_report.txt
+```
+
+Standardization here means canonical names, order, types, null handling, ranges, lineage, derivation rules, and schema fingerprints. It does not mean fitted z-score normalization, min-max scaling, fitted imputation, PCA, target-aware feature selection, train/test splitting, or model training.
+
+See [docs/FEATURES.md](docs/FEATURES.md) for generated feature definitions and [schemas/feature_lineage.json](schemas/feature_lineage.json) for derived-feature lineage.
+
 ## FaceForensics++ Metadata Support
 
 Expected local metadata path:
@@ -457,6 +517,7 @@ python script.py --dry-run
 python tools\dataset_tool.py validate
 python tools\dataset_tool.py summary
 python tools\dataset_tool.py audit-features
+python tools\dataset_tool.py prepare-features
 git -c safe.directory=E:/Anything/video_analysis status --short --untracked-files=all
 ```
 
@@ -475,6 +536,7 @@ Near-term:
 - Gather more manually labeled `outcome_features.json` samples.
 - Audit and plan small balanced pilot datasets.
 - Use v0.9.3 feature-audit reports to remove leakage risks before any classifier experiment.
+- Use v0.9.4 standardized features as the stable input contract for future split-safe preprocessing.
 - Improve dataset documentation as real dataset sources are added.
 - Keep validation strict around labels and forbidden probability/verdict fields.
 

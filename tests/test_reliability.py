@@ -150,7 +150,7 @@ class ReliabilityTests(unittest.TestCase):
                 "status": "completed",
             },
             analysis_environment={
-                "application_version": "0.9.3",
+                "application_version": "0.9.4",
                 "report_schema_version": "0.7",
             },
             source={

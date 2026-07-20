@@ -6,6 +6,17 @@ The audit exists to answer a narrow question before any model work begins: which
 
 It does not train a classifier, make predictions, calculate probabilities, choose thresholds, calibrate D3, call Gemini, or evaluate model performance.
 
+In v0.9.4, this audit feeds the registry-controlled standardization workflow:
+
+```text
+dataset/statistics/model_feature_schema.json
+    -> schemas/feature_registry.json
+    -> schemas/feature_schema.json
+    -> dataset/standardized/standardized_features.csv
+```
+
+The audit remains useful for exploratory review, while v0.9.4 standardization defines the stable future feature vector.
+
 ## Commands
 
 Run the full workflow:

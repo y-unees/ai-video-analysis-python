@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.9.4
+
+- Added `schemas/feature_registry.json` as the canonical feature registry for raw exported fields and approved derived features.
+- Added `dataset_tools.feature_preparation` for registry validation, feature-value validation, same-sample derived features, standardized feature vectors, schema fingerprinting, lineage, compatibility checks, and generated feature documentation.
+- Added `feature-registry`, `validate-features`, `engineer-features`, `standardize-features`, `check-feature-compatibility`, `generate-feature-docs`, and `prepare-features` commands.
+- Added generated feature schema artifacts: `schemas/feature_schema.json`, `schemas/feature_lineage.json`, and `schemas/feature_evolution.json`.
+- Added generated `docs/FEATURES.md` from the registry and schema.
+- Added standardized dataset outputs under `dataset/standardized/` while leaving raw dataset exports untouched.
+- Added six same-sample derived features: exposure extreme ratio, sharpness-to-contrast ratio, motion spike ratio, flow residual ratio, audio-features-available indicator, and evidence-module coverage.
+- Added regression tests for registry validation, value validation, derived feature behavior, zero-denominator/null handling, schema fingerprinting, compatibility checks, standardized outputs, and CLI commands.
+- Kept v0.9.4 non-modeling: no fitted scaling, fitted imputation, PCA, train/test splitting, classifier training, prediction, probabilities, thresholds, calibration, Gemini, API, frontend, database, deployment, or cloud integration.
+
 ## v0.9.3
 
 - Added `dataset_tools.feature_audit` for local dataset statistics, column profiling, missing-value audit, invalid numeric detection, constant/near-constant detection, duplicate checks, leakage warnings, descriptive statistics, class comparisons, and correlation analysis.

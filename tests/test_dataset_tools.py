@@ -195,7 +195,7 @@ def _feature(sha: str = "d" * 64, video_name: str = "sample.mp4", d3_status: str
     report = _outcome_report()
     report["source"]["sha256"] = sha
     report["source"]["filename"] = video_name
-    report["analysis_environment"]["application_version"] = "0.9.3"
+    report["analysis_environment"]["application_version"] = "0.9.4"
     report["learned_detector_results"]["d3"]["execution"]["status"] = d3_status
     if d3_status != "completed":
         report["learned_detector_results"]["d3"]["native_output"]["raw_score"] = None
