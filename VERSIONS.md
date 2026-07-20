@@ -2,7 +2,7 @@
 
 This file keeps the project history that used to live inside the README. The README now focuses on purpose, setup, and current workflows; this file explains how the system grew over time and what each version means technically.
 
-Current application version: `0.9.2`
+Current application version: `0.9.3`
 
 Current report schema version: `0.7`
 
@@ -10,11 +10,42 @@ Outcome feature schema version: `0.9.0`
 
 Dataset manifest schema version: `0.9.1`
 
+Feature audit schema version: `0.9.3`
+
 ## Version Line
 
 The project is still pre-1.0. Versions describe local workflow maturity, artifact contracts, and analysis-module boundaries. They do not imply a production detector, trained classifier, or validated probability model.
 
 The core principle across all versions remains the same: produce local, explainable evidence artifacts without assigning authenticity verdicts.
+
+## v0.9.3
+
+v0.9.3 adds the dataset statistics and feature-audit layer that should run before any classifier development.
+
+Key additions:
+
+- `dataset_tools.feature_audit` module.
+- `python tools/dataset_tool.py statistics`.
+- `python tools/dataset_tool.py feature-audit`.
+- `python tools/dataset_tool.py model-schema`.
+- `python tools/dataset_tool.py audit-features`.
+- Deterministic local outputs under `dataset/statistics/`.
+- Dataset-level profile with sample counts, class balance, duplicate counts, column categories, warnings, and model-readiness status.
+- Column-level profiles with semantic category, detected data type, missing counts, unique counts, sample values, quality flags, model eligibility, and exclusion reasons.
+- Missing-value audit with class-level missingness counts.
+- Invalid numeric audit for `NaN`, infinity, mixed numeric/non-numeric values, and defensible impossible values.
+- Constant and near-constant feature detection.
+- Duplicate detection for full rows, sample IDs, source hashes, source paths, and feature-file references.
+- Leakage detection for labels, filenames, paths, source metadata, class-bearing notes, sample IDs, and class-revealing values.
+- Descriptive statistics for eligible numeric features across all samples and by class.
+- Exploratory real-versus-AI comparisons with mean/median differences, effect-size estimates, point-biserial correlation, and a Mann-Whitney U normal approximation where usable.
+- Numeric-feature correlation matrix and high-correlation pair report.
+- `model_feature_schema.json` for future modeling code.
+- `statistics_report.txt` for human review.
+
+Important constraint:
+
+v0.9.3 does not train, evaluate, or run any classifier. It does not calculate probabilities, thresholds, accuracy, precision, recall, F1, ROC-AUC, confusion matrices, or production verdicts. The current 12-video dataset is treated as a pilot workflow dataset, not a reliable basis for generalization.
 
 ## v0.9.2
 
@@ -309,7 +340,7 @@ Application version and schema version are separate:
 - `OUTCOME_FEATURE_SCHEMA_VERSION` identifies the `outcome_features.json` contract.
 - `DATASET_MANIFEST_SCHEMA_VERSION` identifies the dataset manifest contract.
 
-This means `APP_VERSION` can be `0.9.2` while the main report schema remains `0.7`, because v0.8 and v0.9 added optional artifacts and dataset tooling without replacing the core report schema.
+This means `APP_VERSION` can be `0.9.3` while the main report schema remains `0.7`, because v0.8 and v0.9 added optional artifacts, dataset tooling, and feature auditing without replacing the core report schema.
 
 ## Stable Non-Goals
 

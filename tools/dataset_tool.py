@@ -13,7 +13,9 @@ from dataset_tools import (
     plan_faceforensics_samples,
     export_dataset_csv,
     export_dataset_jsonl,
+    print_audit_summary,
     register_sample,
+    run_feature_audit,
     summarize_dataset,
     validate_plan,
     validate_dataset,
@@ -59,6 +61,28 @@ def main() -> int:
     validate_plan_parser.add_argument("plan_path")
     validate_plan_parser.add_argument("--real-count", type=int, default=None)
     validate_plan_parser.add_argument("--ai-count", type=int, default=None)
+
+    def add_audit_options(command: argparse.ArgumentParser) -> None:
+        command.add_argument("--input", default=None, help="Feature export path. Defaults to dataset/exports/dataset_features.csv.")
+        command.add_argument("--output-dir", default="dataset/statistics", help="Directory for audit outputs.")
+        command.add_argument("--missing-threshold", type=float, default=0.40, help="Missing-heavy threshold. Defaults to 0.40.")
+        command.add_argument("--near-constant-threshold", type=float, default=0.95, help="Near-constant dominant-value threshold.")
+        command.add_argument("--correlation-threshold", type=float, default=0.95, help="High-correlation absolute threshold.")
+        command.add_argument("--plots", action="store_true", help="Request optional plots. Core audit still succeeds if plots are unavailable.")
+        command.add_argument("--strict", action="store_true", help="Reserved for stricter future fatal checks.")
+        command.add_argument("--overwrite", action="store_true", default=True, help="Overwrite existing audit output files.")
+
+    statistics_parser = subparsers.add_parser("statistics", help="Generate dataset statistics outputs.")
+    add_audit_options(statistics_parser)
+
+    feature_audit_parser = subparsers.add_parser("feature-audit", help="Generate feature quality and leakage audit outputs.")
+    add_audit_options(feature_audit_parser)
+
+    model_schema_parser = subparsers.add_parser("model-schema", help="Generate the future model feature schema.")
+    add_audit_options(model_schema_parser)
+
+    audit_features_parser = subparsers.add_parser("audit-features", help="Run the full dataset statistics and feature audit workflow.")
+    add_audit_options(audit_features_parser)
 
     args = parser.parse_args()
     dataset_root = Path(args.dataset_root)
@@ -116,6 +140,27 @@ def main() -> int:
             result = validate_plan(Path(args.plan_path), requested_real_count=args.real_count, requested_ai_count=args.ai_count)
             print(json.dumps(result, indent=2, sort_keys=True))
             return 0 if result["status"] == "valid" else 1
+        if args.command in {"statistics", "feature-audit", "model-schema", "audit-features"}:
+            audit = run_feature_audit(
+                input_path=Path(args.input) if args.input else None,
+                output_dir=Path(args.output_dir),
+                dataset_root=dataset_root,
+                missing_threshold=args.missing_threshold,
+                near_constant_threshold=args.near_constant_threshold,
+                correlation_threshold=args.correlation_threshold,
+                include_plots=args.plots,
+                strict=args.strict,
+                overwrite=args.overwrite,
+            )
+            if args.command == "model-schema":
+                print(f"Model schema written: {Path(args.output_dir) / 'model_feature_schema.json'}")
+            elif args.command == "statistics":
+                print(f"Statistics written: {Path(args.output_dir)}")
+            elif args.command == "feature-audit":
+                print(f"Feature audit written: {Path(args.output_dir)}")
+            else:
+                print_audit_summary(audit)
+            return 0
     except Exception as error:
         print(f"Dataset tool error: {error}")
         return 1

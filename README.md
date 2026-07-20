@@ -1,6 +1,6 @@
 # Local Video Analysis MVP
 
-Current version: `v0.9.2`
+Current version: `v0.9.3`
 
 Local Video Analysis MVP is a local-first, terminal-based video analysis project for collecting explainable forensic evidence from videos. It is being built as a cautious foundation for future labeled-dataset testing, not as a finished deepfake detector.
 
@@ -37,6 +37,7 @@ Implemented today:
 - Dataset registration, validation, summary, and deterministic JSONL/CSV exports.
 - FaceForensics++ metadata audit and deterministic pilot planning.
 - One-command local dataset preparation with `python script.py`.
+- Dataset statistics, feature-quality auditing, leakage checks, and future model-feature schema generation.
 
 Not implemented:
 
@@ -219,7 +220,7 @@ It intentionally does not contain:
 
 ## Dataset Preparation
 
-v0.9.1 and v0.9.2 add tools for collecting labeled `outcome_features.json` artifacts without training a model.
+v0.9.1, v0.9.2, and v0.9.3 add tools for collecting and auditing labeled `outcome_features.json` artifacts without training a model.
 
 Manifest path:
 
@@ -340,6 +341,57 @@ d3_summary.d3_raw_score
 
 Unavailable values are `null` in JSONL and empty fields in CSV.
 
+## Dataset Statistics and Feature Audit
+
+v0.9.3 adds a local feature-audit workflow that runs before any classifier work. Its job is to inspect the exported dataset, identify usable numeric feature candidates, exclude identifiers and leakage-prone fields, report missing/constant/invalid values, compare classes descriptively, and generate a future model-feature schema.
+
+Run the full audit:
+
+```powershell
+python tools\dataset_tool.py audit-features
+```
+
+Use an explicit input export:
+
+```powershell
+python tools\dataset_tool.py audit-features --input dataset\exports\dataset_features.csv
+```
+
+Reusable subcommands:
+
+```powershell
+python tools\dataset_tool.py statistics
+python tools\dataset_tool.py feature-audit
+python tools\dataset_tool.py model-schema
+```
+
+Generated outputs:
+
+```text
+dataset/statistics/
+├── dataset_profile.json
+├── column_profile.csv
+├── feature_statistics.csv
+├── class_comparison.csv
+├── missing_values.csv
+├── invalid_values.csv
+├── constant_features.csv
+├── correlation_matrix.csv
+├── high_correlation_pairs.csv
+├── leakage_report.json
+├── feature_quality.json
+├── model_feature_schema.json
+└── statistics_report.txt
+```
+
+The audit explicitly excludes target labels, filenames, paths, sample IDs, hashes, source notes, and other class-revealing metadata from future model inputs. Filename conventions such as `real__...` and `ai__...` are treated as label-resolution aids only, never as model features.
+
+`model_feature_schema.json` is a preparation artifact. It contains included and excluded feature lists plus exclusion reasons, but it does not contain trained parameters, predictions, probabilities, thresholds, or performance scores.
+
+The current 12-video dataset is a pilot dataset. It can test the workflow, but it is not large enough to support reliable generalization claims.
+
+See [docs/FEATURE_AUDIT.md](docs/FEATURE_AUDIT.md) for command defaults, output descriptions, and readiness rules.
+
 ## FaceForensics++ Metadata Support
 
 Expected local metadata path:
@@ -404,6 +456,7 @@ Useful pre-push checks:
 python script.py --dry-run
 python tools\dataset_tool.py validate
 python tools\dataset_tool.py summary
+python tools\dataset_tool.py audit-features
 git -c safe.directory=E:/Anything/video_analysis status --short --untracked-files=all
 ```
 
@@ -421,6 +474,7 @@ Near-term:
 
 - Gather more manually labeled `outcome_features.json` samples.
 - Audit and plan small balanced pilot datasets.
+- Use v0.9.3 feature-audit reports to remove leakage risks before any classifier experiment.
 - Improve dataset documentation as real dataset sources are added.
 - Keep validation strict around labels and forbidden probability/verdict fields.
 

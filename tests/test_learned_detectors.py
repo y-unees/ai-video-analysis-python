@@ -166,7 +166,7 @@ class D3TimeoutAndValidationTests(unittest.TestCase):
     def test_validator_rejects_non_completed_raw_score_and_confidence(self) -> None:
         report = {
             "schema_version": "0.7",
-            "analysis_environment": {"application_version": "0.9.2"},
+            "analysis_environment": {"application_version": "0.9.3"},
             "frame_analysis": {"frames": [], "comparisons": [], "summary": {"frames_analyzed": 0, "heuristic_near_black_frame_count": 0, "heuristic_near_white_frame_count": 0, "heuristic_large_change_pair_count": 0, "heuristic_near_duplicate_pair_count": 0}},
             "sampling": {"decoded_frame_count": 0},
             "observations": {},

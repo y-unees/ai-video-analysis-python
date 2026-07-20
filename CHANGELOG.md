@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.3
+
+- Added `dataset_tools.feature_audit` for local dataset statistics, column profiling, missing-value audit, invalid numeric detection, constant/near-constant detection, duplicate checks, leakage warnings, descriptive statistics, class comparisons, and correlation analysis.
+- Added `statistics`, `feature-audit`, `model-schema`, and `audit-features` commands to `tools/dataset_tool.py`.
+- Added deterministic outputs under `dataset/statistics/`, including `dataset_profile.json`, tabular CSV reports, `leakage_report.json`, `feature_quality.json`, `model_feature_schema.json`, and `statistics_report.txt`.
+- Added future model-feature schema generation that excludes target labels, identifiers, paths, filenames, source metadata, fully empty columns, constant columns, invalid numeric columns, and unsupported categorical fields.
+- Added regression tests for successful audits, fatal input errors, label warnings, missing/empty/constant/near-constant/invalid features, leakage detection, duplicates, statistics, correlations, JSONL input, valid JSON output, and CLI commands.
+- Added `docs/FEATURE_AUDIT.md` and updated README/version documentation for the v0.9.3 feature-audit workflow.
+- Kept v0.9.3 non-modeling: no classifier training, prediction, probabilities, confidence scores, thresholds, calibration, Gemini call, API, frontend, database, deployment, or cloud integration.
+
 ## v0.9.2
 
 - Added FaceForensics++ metadata auditing with CSV encoding/delimiter inspection, schema inference, duplicate/missing-value counts, label counts, normalized records, and video availability checks.
